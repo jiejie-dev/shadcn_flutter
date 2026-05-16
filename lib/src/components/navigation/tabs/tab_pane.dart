@@ -88,8 +88,9 @@ class TabPaneTheme extends ComponentThemeData {
   }) {
     return TabPaneTheme(
       borderRadius: borderRadius == null ? this.borderRadius : borderRadius(),
-      backgroundColor:
-          backgroundColor == null ? this.backgroundColor : backgroundColor(),
+      backgroundColor: backgroundColor == null
+          ? this.backgroundColor
+          : backgroundColor(),
       border: border == null ? this.border : border(),
       barHeight: barHeight == null ? this.barHeight : barHeight(),
     );
@@ -142,8 +143,8 @@ class TabPaneData<T> extends SortableData<T> {
 /// - [index] (int): Zero-based index of this tab in the list
 ///
 /// Returns: A [TabChild] widget for the tab button
-typedef TabPaneItemBuilder<T> = TabChild Function(
-    BuildContext context, TabPaneData<T> item, int index);
+typedef TabPaneItemBuilder<T> =
+    TabChild Function(BuildContext context, TabPaneData<T> item, int index);
 
 /// A comprehensive tab pane widget with sortable tabs and integrated content display.
 ///
@@ -336,18 +337,24 @@ class _TabGhostData {
 /// Manages the scrolling and rendering of tab pane content.
 class TabPaneState<T> extends State<TabPane<T>> {
   final ScrollController _scrollController = ScrollController();
+  int? _hoveredTabIndex;
+  int? _pressedTabIndex;
 
   /// Drag gesture identifier for tab interactions.
   static const kTabDrag = #tabDrag;
 
   Widget _childBuilder(
-      BuildContext context, TabContainerData data, Widget child) {
+    BuildContext context,
+    TabContainerData data,
+    Widget child,
+  ) {
     final theme = Theme.of(context);
     final densityContentPadding =
         theme.density.baseContentPadding * theme.scaling;
     final compTheme = ComponentTheme.maybeOf<TabPaneTheme>(context);
     final isFocused = data.index == data.selected;
-    final backgroundColor = widget.backgroundColor ??
+    final backgroundColor =
+        widget.backgroundColor ??
         compTheme?.backgroundColor ??
         theme.colorScheme.card;
     final border = widget.border ?? compTheme?.border;
@@ -356,25 +363,32 @@ class TabPaneState<T> extends State<TabPane<T>> {
     final borderRadius =
         (widget.borderRadius ?? compTheme?.borderRadius ?? theme.borderRadiusLg)
             .optionallyResolve(context);
-    return Builder(builder: (context) {
-      var tabGhost = Data.maybeOf<_TabGhostData>(context);
-      return SizedBox(
+    return Builder(
+      builder: (context) {
+        var tabGhost = Data.maybeOf<_TabGhostData>(context);
+        final hoverOrPressHighlight =
+            !isFocused &&
+            (data.index == _hoveredTabIndex || data.index == _pressedTabIndex);
+        return SizedBox(
           height: double.infinity,
           child: CustomPaint(
-              painter: _TabItemPainter(
-                  borderRadius: borderRadius,
-                  backgroundColor: backgroundColor,
-                  isFocused: isFocused || tabGhost != null,
-                  borderColor: borderColor,
-                  borderWidth: borderWidth),
-              child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: densityContentPadding * 0.5,
-                  ),
-                  child: IntrinsicWidth(
-                    child: child,
-                  ))));
-    });
+            painter: _TabItemPainter(
+              borderRadius: borderRadius,
+              backgroundColor: backgroundColor,
+              isFocused: isFocused || tabGhost != null || hoverOrPressHighlight,
+              borderColor: borderColor,
+              borderWidth: borderWidth,
+            ),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: densityContentPadding * 0.5,
+              ),
+              child: IntrinsicWidth(child: child),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   List<TabChild> _buildTabItems() {
@@ -385,27 +399,50 @@ class TabPaneState<T> extends State<TabPane<T>> {
     return children;
   }
 
+  void _setHoveredTab(int? index) {
+    if (_hoveredTabIndex == index) {
+      return;
+    }
+    setState(() {
+      _hoveredTabIndex = index;
+    });
+  }
+
+  void _setPressedTab(int? index) {
+    if (_pressedTabIndex == index) {
+      return;
+    }
+    setState(() {
+      _pressedTabIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     var theme = Theme.of(context);
+    final isDesktop = !isMobile(theme.platform);
     final densityGap = theme.density.baseGap * theme.scaling;
     final densityContainerPadding =
         theme.density.baseContainerPadding * theme.scaling;
     final compTheme = ComponentTheme.maybeOf<TabPaneTheme>(context);
     final BorderRadiusGeometry borderRadius =
         widget.borderRadius ?? compTheme?.borderRadius ?? theme.borderRadiusLg;
-    final BorderRadius resolvedBorderRadius =
-        borderRadius.optionallyResolve(context);
-    final backgroundColor = widget.backgroundColor ??
+    final BorderRadius resolvedBorderRadius = borderRadius.optionallyResolve(
+      context,
+    );
+    final backgroundColor =
+        widget.backgroundColor ??
         compTheme?.backgroundColor ??
         theme.colorScheme.card;
     final border = widget.border ?? compTheme?.border;
-    final barHeight = widget.barHeight ??
+    final barHeight =
+        widget.barHeight ??
         compTheme?.barHeight ??
         (densityContainerPadding * 2);
     return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context)
-          .copyWith(scrollbars: false, overscroll: false),
+      behavior: ScrollConfiguration.of(
+        context,
+      ).copyWith(scrollbars: false, overscroll: false),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -438,9 +475,7 @@ class TabPaneState<T> extends State<TabPane<T>> {
                   child: FadeScroll(
                     startOffset: resolvedBorderRadius.bottomLeft.x,
                     endOffset: resolvedBorderRadius.bottomRight.x,
-                    gradient: [
-                      Colors.white.withAlpha(0),
-                    ],
+                    gradient: [Colors.white.withAlpha(0)],
                     endCrossOffset: border?.width ?? 1,
                     controller: _scrollController,
                     child: ClipRect(
@@ -476,42 +511,59 @@ class TabPaneState<T> extends State<TabPane<T>> {
                                     right: resolvedBorderRadius.bottomRight.x,
                                   ),
                                   itemBuilder: (context, index) {
-                                    return GestureDetector(
-                                      onTap: () {
-                                        widget.onFocused(index);
-                                      },
-                                      child: Sortable<T>(
-                                        key: ValueKey(index),
-                                        data: widget.items[index],
-                                        enabled: widget.onSort != null,
-                                        onDragStart: () {
+                                    return MouseRegion(
+                                      cursor: SystemMouseCursors.basic,
+                                      onEnter: isDesktop
+                                          ? (_) => _setHoveredTab(index)
+                                          : null,
+                                      onExit: isDesktop
+                                          ? (_) {
+                                              if (_hoveredTabIndex == index) {
+                                                _setHoveredTab(null);
+                                              }
+                                            }
+                                          : null,
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTapDown: (_) => _setPressedTab(index),
+                                        onTapUp: (_) => _setPressedTab(null),
+                                        onTapCancel: () => _setPressedTab(null),
+                                        onTap: () {
                                           widget.onFocused(index);
                                         },
-                                        onAcceptLeft: (value) {
-                                          if (value is! TabPaneData<T>) {
-                                            return;
-                                          }
-                                          List<TabPaneData<T>> tabs =
-                                              widget.items;
-                                          tabs.swapItem(value, index);
-                                          widget.onSort?.call(tabs);
-                                          widget.onFocused(index);
-                                        },
-                                        onAcceptRight: (value) {
-                                          if (value is! TabPaneData<T>) {
-                                            return;
-                                          }
-                                          List<TabPaneData<T>> tabs =
-                                              widget.items;
-                                          tabs.swapItem(value, index + 1);
-                                          widget.onSort?.call(tabs);
-                                          widget.onFocused(index);
-                                        },
-                                        ghost: Data.inherit(
-                                          data: _TabGhostData(),
+                                        child: Sortable<T>(
+                                          key: ValueKey(index),
+                                          data: widget.items[index],
+                                          enabled: widget.onSort != null,
+                                          onDragStart: () {
+                                            widget.onFocused(index);
+                                          },
+                                          onAcceptLeft: (value) {
+                                            if (value is! TabPaneData<T>) {
+                                              return;
+                                            }
+                                            List<TabPaneData<T>> tabs =
+                                                widget.items;
+                                            tabs.swapItem(value, index);
+                                            widget.onSort?.call(tabs);
+                                            widget.onFocused(index);
+                                          },
+                                          onAcceptRight: (value) {
+                                            if (value is! TabPaneData<T>) {
+                                              return;
+                                            }
+                                            List<TabPaneData<T>> tabs =
+                                                widget.items;
+                                            tabs.swapItem(value, index + 1);
+                                            widget.onSort?.call(tabs);
+                                            widget.onFocused(index);
+                                          },
+                                          ghost: Data.inherit(
+                                            data: _TabGhostData(),
+                                            child: children[index],
+                                          ),
                                           child: children[index],
                                         ),
-                                        child: children[index],
                                       ),
                                     );
                                   },
@@ -586,14 +638,22 @@ class _TabItemPainter extends CustomPainter {
     double adjustment = borderWidth;
     path.moveTo(-borderRadius.bottomLeft.x, size.height + adjustment);
     path.quadraticBezierTo(
-        0, size.height, 0, size.height - borderRadius.bottomLeft.y);
+      0,
+      size.height,
+      0,
+      size.height - borderRadius.bottomLeft.y,
+    );
     path.lineTo(0, borderRadius.topLeft.y);
     path.quadraticBezierTo(0, 0, borderRadius.topLeft.x, 0);
     path.lineTo(size.width - borderRadius.topRight.x, 0);
     path.quadraticBezierTo(size.width, 0, size.width, borderRadius.topRight.y);
     path.lineTo(size.width, size.height - borderRadius.bottomRight.y);
-    path.quadraticBezierTo(size.width, size.height,
-        size.width + borderRadius.bottomRight.x, size.height + adjustment);
+    path.quadraticBezierTo(
+      size.width,
+      size.height,
+      size.width + borderRadius.bottomRight.x,
+      size.height + adjustment,
+    );
     if (closed) {
       path.close();
     }
