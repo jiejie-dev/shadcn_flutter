@@ -1,3 +1,243 @@
+## 0.1.0
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: Replace FocusScope with Focus.
+ - **REFACTOR**: adhere to component theme guidelines.
+ - **REFACTOR**: Remove unused expanding logic and adjust collapsing behavior.
+ - **REFACTOR**: Remove actual size reporting and pane size caching.
+ - **REFACTOR**: Remove unnecessary IntrinsicHeight and IntrinsicWidth in ResizablePanel.
+ - **REFACTOR**: Move `flex` to optional named parameter.
+ - **REFACTOR**: Remove unused parameters in ResizableContainerData.
+ - **REFACTOR**: rename internal state classes for clarity and improve animation controller handling.
+ - **REFACTOR**: rename ColorPickingLayer to EyeDropperLayer for consistency.
+ - **REFACTOR**: make darkTheme parameter nullable in ShadcnApp.
+ - **REFACTOR**: update createState methods to return State<T> for consistency.
+ - **REFACTOR**: split accordion theme into accordion theme and accordion item theme.
+ - **REFACTOR**: improve formatting and readability in field signature generation.
+ - **REFACTOR**: Sort components alphabetically and docs pages alphabetically in sections.
+ - **REFACTOR**: Remove unnecessary focus node management.
+ - **REFACTOR**: Remove MenuPopup component.
+ - **REFACTOR**: Rename `flexSpace` to `flexCount` and update logic.
+ - **REFACTOR**: Use existing key in PopoverController.show().
+ - **REFACTOR**: Add focus node to MenuButton.
+ - **REFACTOR**: Extract popoverController from state to data class.
+ - **REFACTOR**: Move MenuButton popover to Button widget.
+ - **REFACTOR**: Remove debugging print statements.
+ - **REFACTOR**: Improve scroll arrow behavior in select popup.
+ - **REFACTOR**: Add headers and footers to SelectGroup.
+ - **REFACTOR**: Use MouseRegion to handle hover states for NavigationMenu and NavigationItem.
+ - **REFACTOR**: Add logging to _AttachedSelectValue.
+ - **REFACTOR**: Use PopoverPortal for MenuGroup.
+ - **REFACTOR**: Replace Container with SizedBox for better layout control.
+ - **REFACTOR**: Use Button instead of GhostButton in SelectItemButton.
+ - **REFACTOR**: adhere to component theme guidelines.
+ - **REFACTOR**: Rename ComboBox to Select.
+ - **REFACTOR**: Rename Combobox to Select.
+ - **REFACTOR**: Introduce _SelectData and improve search logic.
+ - **REFACTOR**: Use AnimatedBuilder for search filter.
+ - **REFACTOR**: Replace `selectedIndex` with `value` in `Select` component.
+ - **REFACTOR**: Rename ComboBox to Select and update imports.
+ - **REFACTOR**: improve visibility checks for private members in documentation generation.
+ - **REFACTOR**: Change `openMenu` to `openSubMenu` and add `border` property to `Menubar`.
+ - **REFACTOR**: Remove focusScopeNode and simplify menu logic.
+ - **REFACTOR**: Use PopoverController for menu submenus.
+ - **REFACTOR**: Remove redundant data builder in MenuButton and Menubar.
+ - **FIX**: Ensure right-side collapsed panes are not expanded.
+ - **FIX**: Correct resizing logic for panes with flex.
+ - **FIX**: clear suggestions using assignment instead of clear method and improve chip submission handling.
+ - **FIX**: update ChipEditingController to use plainText for suggestions and improve chip handling.
+ - **FIX**: typo in ChipInput.
+ - **FIX**: Use attached pane size for initial size if available.
+ - **FIX**: Auto-focus first command item in Command palette.
+ - **FIX**: Sortable onDragEnd not triggered when the drag failed.
+ - **FIX**: remove fallback values for backgroundColor and borderColor in CardImage.
+ - **FIX**: Enable resizable debug mode.
+ - **FIX**: update Flutter version to 3.35.1 and remove continue-on-error flags in deployment workflow.
+ - **FIX**: Calculate flex based on view size instead of min size.
+ - **FIX**: Assert `T == dynamic` for FormRow.
+ - **FIX**: update form data inheritance and improve form controller retrieval methods.
+ - **FIX**: Remove type assertion and unused code in Select.
+ - **FIX**: Adjust pane size based on flex when container flexes.
+ - **FIX**: Flex size calculation in ResizablePane.
+ - **FIX**: Add score caching for `Select` component.
+ - **FIX**: Improve flex space calculation for resizable panels.
+ - **FIX**: Use spared flex space directly instead of tracking changes.
+ - **FIX**: update controller attachment to use cached value directly.
+ - **FIX**: restrict RefreshTrigger to start direction.
+ - **FIX**: Conflicting RadioGroup Imports.
+ - **FIX**: Use theme color for CircularProgressIndicator.
+ - **FIX**: make constructor const & use Object.hash.
+ - **FIX**: make constructor const & use Object.hash.
+ - **FIX**: Allow Select to accept String type.
+ - **FIX**: Calculate flex space correctly for attached panes.
+ - **FIX**: #181 Input OTP do not honour onSubmitted.
+ - **FIX**: correct darkZync to darkZinc typo in README and docs.
+ - **FIX**: Handle flex space changes in ResizablePane.
+ - **FIX**: initialize animations with default values in init state.
+ - **FIX**: resolve errors introduced by upstream sync.
+ - **FIX**: Resizable pane resizing issue with attached panes.
+ - **FIX**: add divider height to accordion theme.
+ - **FIX**(color-picker): remove unnecessary whitespace in ColorPicker state.
+ - **FIX**: apply theme updates to animation.
+ - **FIX**: Select component search results order and add cursor to SelectItemButton.
+ - **FIX**: Use double for flex property and calculations.
+ - **FIX**: add divider height to accordion theme.
+ - **FIX**: Add margin to resizable test page and update viewSize calculation.
+ - **FIX**: Adjust flex space distribution when resizing panes.
+ - **FIX**(scaffold): set height constraints to correctly measure header and footer size.
+ - **FIX**: Add scroll to top/bottom indicators in SelectPopup.
+ - **FIX**: Use normal mode for components page.
+ - **FIX**: Correctly calculate initial size of panes.
+ - **FIX**: Add scroll controller dispose and init state logic.
+ - **FIX**: Use unique keys for ResizablePane.
+ - **FIX**: ResizablePane assert.
+ - **FIX**: Optimize menu data management and popover alignment.
+ - **FIX**: Avoid leaking controller when detaching PopoverPortal.
+ - **FIX**: Return 0 size when panel is collapsed in `_borrowSize`.
+ - **FIX**: Prevent overflow when borrowing from multiple panes.
+ - **FIX**: Add controller state management and expand logic in resizable.
+ - **FIX**: Clamp resizable pane size to min/max values.
+ - **FIX**: Resizable panel size updates.
+ - **FIX**: Close submenus when navigating to different popover.
+ - **FIX**: Prevent exceeding min/max size on resize.
+ - **FIX**: Pass regionGroupId to PopoverRoute and TapRegion.
+ - **FIX**: Prevent resize overflow when dragging resizable pane.
+ - **FIX**: Resizable panel calculation for initial collapsed state.
+ - **FIX**: Apply proposed sizes before setting pane collapsed state.
+ - **FIX**: Update pane size when flex changes.
+ - **FIX**: Update ResizablePane with new controller and flex value.
+ - **FIX**: Menu button padding and trailing icon in menubar.
+ - **FIX**: Remove unnecessary ConstrainedBox in ResizablePane.
+ - **FIX**: Improve resizing logic for collapsible panes.
+ - **FIX**: Remove debug code and update variable names.
+ - **FIX**: Resetting proposed size in loaning and borrowing logic.
+ - **FIX**: Adjust menu positioning.
+ - **FIX**: Improve resizable panel collapse logic and debugging.
+ - **FIX**: Improve ResizablePanel logic and fix minor issues.
+ - **FIX**: Expand collapsed pane when enough space is available.
+ - **FIX**: Handle expanding panels on both sides.
+ - **FIX**: Improve logic for collapsing and expanding panes.
+ - **FIX**: remove dot shorthands.
+ - **FIX**: replace context.theme with Theme.of(context).
+ - **FIX**: Add focus scope to Menubar.
+ - **FIX**: Clamp resizable pane size within min and max limits.
+ - **FIX**: initialize titleBarHeight and resizeThickness to null in WindowWidget constructor.
+ - **FEAT**(components): add menubar component.
+ - **FEAT**: use custom painter for divider.
+ - **FEAT**: add menu divider component and example in menubar.
+ - **FEAT**(menu): Add PopoverController support to MenuGroup.
+ - **FEAT**(button): add margin to Button.
+ - **FEAT**(menu): Add popover background and border.
+ - **FEAT**: add onHover and onFocus to Button.
+ - **FEAT**(menu): Add support for submenus.
+ - **FEAT**(menu): add menubar and menu group.
+ - **FEAT**: add menu button variance.
+ - **FEAT**(example): add menubar example.
+ - **FEAT**(menu): add menubar and menu button components.
+ - **FEAT**: Add menu component.
+ - **FEAT**: add menu popup component.
+ - **FEAT**(icon): add emojis support.
+ - **FEAT**(menu): adjust menubar offset and sub menu arrow position.
+ - **FEAT**: add Resizable component.
+ - **FEAT**: Add minSize to ResizablePane and ResizablePanel.
+ - **FEAT**(resizable): Add nested example.
+ - **FEAT**: add vertical resizable panel example.
+ - **FEAT**: Add ResizablePaneController and collapsible example.
+ - **FEAT**(popover): add region group and tap outside handler.
+ - **FEAT**: add expand/collapse methods to ResizablePanelController.
+ - **FEAT**: add group id to menu.
+ - **FEAT**: Add `maxSize` and `tryExpandSize` for controlled resizable panes.
+ - **FEAT**: add root group and sub group.
+ - **FEAT**(menu): close all popovers when a menu is opened.
+ - **FEAT**: add ContextedCallback type and close others.
+ - **FEAT**: Add MenuItem abstract class and hasLeading property.
+ - **FEAT**: add trySetSize to ResizablePaneController.
+ - **FEAT**(menu): add shortcut activator display.
+ - **FEAT**(resizable): add expand/collapse methods to controller.
+ - **FEAT**: add support for collapsing and expanding sibling panels.
+ - **FEAT**(resizable): add edge case handling for expansion/collapse.
+ - **FEAT**(resizable): Add collapse/expand functionality.
+ - **FEAT**(menu): Add menu shortcut display and checkbox.
+ - **FEAT**(menu): add MenuRadio and MenuRadioGroup components for radio buttons in menus.
+ - **FEAT**: add popover offset to menu item.
+ - **FEAT**(example): Add Select widget example.
+ - **FEAT**(components): add ContextMenu component.
+ - **FEAT**: Add Dropdown Menu Component.
+ - **FEAT**(shadcn_flutter): 增强组件悬停和点击反馈.
+ - **FEAT**(shadcn_flutter): update to 0.0.12.
+ - **FEAT**: add hover effect to select popup scrollbar.
+ - **FEAT**(select): add scroll to top indicator for select popup.
+ - **FEAT**: Add computeIndexingScore to SelectGroup.
+ - **FEAT**: Add Navigation Menu.
+ - **FEAT**: implement accordion theme.
+ - **FEAT**: add score caching for select values.
+ - **FEAT**(shadcn_flutter): 为 TabPane 添加悬停高亮反馈.
+ - **FEAT**: implement accordion theme.
+ - **FEAT**(component-themes): setup theme class.
+ - **FEAT**: implement RadioCardThemeData.
+ - **FEAT**: Add `onChanged` callback to `Select`.
+ - **FEAT**(combobox): add showUnrelatedValues prop to combobox.
+ - **FEAT**: Implement PhoneInputTheme.
+ - **FEAT**: Add SelectItemButton and support for disableTransition in Button.
+ - **FEAT**: added showTopSnapBar to WindowNavigator widget for optional top snap bar functionality.
+ - **FEAT**: add themes for carousel date picker select navigation bar and refresh trigger.
+ - **FEAT**: add support for custom indexing logic in Select.
+ - **FEAT**(theme): add tree and window themes.
+ - **FEAT**(select): Add `computeIndexingScore` and `Data` widget.
+ - **FEAT**: enhance menu functionality and improve focus management.
+ - **FEAT**: add Switcher component and example to enhance navigation options.
+ - **FEAT**: add SwitcherExample2 component with login and registration forms.
+ - **FEAT**: enhance FormController to manage detached values and improve state retrieval.
+ - **FEAT**: enhance SwitcherExample2 with form controllers and improve state management.
+ - **FEAT**: add alignment parameter to showDropdown function for customizable positioning.
+ - **FEAT**: add option to configure unchecked background color in Checkbox widget.
+ - **FEAT**: add step to prepare dependencies for LLMs documentation generation.
+ - **FEAT**(color): add core color utilities and ColorDerivative abstraction for HSV/HSL transforms.
+ - **FEAT**(color-picker): add HSL/HSV/Alpha slider widgets and painters.
+ - **FEAT**(color-picker): introduce new ColorPicker using sliders; remove legacy color_picker.dart.
+ - **FEAT**(color-input): add ColorInput widget, controller, and theming; integrate with ColorPicker.
+ - **FEAT**: support custom ResizablePaneController.
+ - **FEAT**: add submenu support to menu button.
+ - **FEAT**(core): export color, color picker, eye dropper, history, and sliders in public API.
+ - **FEAT**(button): add ToggleController, ControlledToggle, and Toggle widget with ghost/secondary styles.
+ - **FEAT**: Add DensityWrap widget for adaptive spacing.
+ - **FEAT**(util): add size param to sized.
+ - **FEAT**: add support for flexible container sizing.
+ - **FEAT**: add pull request template and CI workflow for automated checks.
+ - **FEAT**: add flex support to ResizablePane.
+ - **FEAT**: add pull request template with comprehensive guidelines.
+ - **FEAT**(tabs): add expand.
+ - **FEAT**(go_router_app_example): create a new page with to explain GoRouter example.
+ - **FEAT**: Add new ColorInput, FormField, and extensive component tests and documentation examples.
+ - **FEAT**: add internationalization infrastructure.
+ - **FEAT**: enhance theme system.
+ - **FEAT**: refactor resizable pane state to use data inheritance and controller.
+ - **FEAT**: add experimental Chat component.
+ - **FEAT**: Add support for `ResizablePane.flex`.
+ - **FEAT**(layout): add faded scrollable viewport.
+ - **FEAT**: Add debug option for resizable pane.
+ - **FEAT**(theme): add density system and apply spacing.
+ - **FEAT**(resizable): add pan handlers to divider.
+ - **FEAT**: Allow panes to report actual size.
+ - **FEAT**(display): add divider child alignment.
+ - **FEAT**: Add flex support for ResizablePane.
+ - **FEAT**(resizable): Add resizable property to resizable panel.
+ - **FEAT**(resizable): add flex support for ResizablePanel.
+ - **FEAT**(example): Add ResizablePanel test page.
+ - **FEAT**(layout): add paint-order flex and stack.
+ - **FEAT**(form): add spinner bounds and stepper buttons.
+ - **FEAT**(eye-dropper): add screen color picker and recent color history grid.
+ - **DOCS**: update documentation examples.
+ - **DOCS**: update test documentation.
+ - **DOCS**(chat): add second chat example.
+ - **DOCS**: improve API documentation.
+ - **DOCS**(changelog): document breaking changes for color picker refactor, param renames, and new HEX/i18n support.
+ - **DOCS**(color): update docs and examples to new ColorPicker/ColorInput and HEX support.
+ - **DOCS**: Update screenshot for ComboBox and add new ones for Context Menu, Dropdown Menu, Menubar, Resizable, and Select.
+ - **DOCS**: update CHANGELOG for v0.0.48.
+ - **BREAKING** **FEAT**(theme): refresh palettes and remove sidebar tokens.
+
 ## [0.0.52]
 
 ### Fixed
