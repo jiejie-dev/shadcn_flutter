@@ -557,7 +557,7 @@ class _StarRatingState extends State<StarRating>
         return FocusableActionDetector(
           enabled: _enabled,
           mouseCursor: _enabled
-              ? SystemMouseCursors.click
+              ? SystemMouseCursors.basic
               : SystemMouseCursors.forbidden,
           onShowFocusHighlight: (showFocus) {
             setState(() {

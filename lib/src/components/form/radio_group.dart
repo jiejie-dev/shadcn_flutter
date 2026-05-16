@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../../shadcn_flutter.dart';
 
 /// Theme data for customizing [Radio] widget appearance.
@@ -17,6 +19,9 @@ class RadioTheme extends ComponentThemeData {
   /// Border color of the radio button.
   final Color? borderColor;
 
+  /// Border color shown while an enabled radio item is hovered or pressed.
+  final Color? hoverBorderColor;
+
   /// Background color of the radio button.
   final Color? backgroundColor;
 
@@ -30,8 +35,13 @@ class RadioTheme extends ComponentThemeData {
   /// - [borderColor] (`Color?`, optional): Border color.
   /// - [backgroundColor] (`Color?`, optional): Background color.
   /// - [size] (`double?`, optional): Radio button size.
-  const RadioTheme(
-      {this.activeColor, this.borderColor, this.size, this.backgroundColor});
+  const RadioTheme({
+    this.activeColor,
+    this.borderColor,
+    this.hoverBorderColor,
+    this.size,
+    this.backgroundColor,
+  });
 
   /// Creates a copy of this theme with the given fields replaced.
   ///
@@ -45,12 +55,15 @@ class RadioTheme extends ComponentThemeData {
   RadioTheme copyWith({
     ValueGetter<Color?>? activeColor,
     ValueGetter<Color?>? borderColor,
+    ValueGetter<Color?>? hoverBorderColor,
     ValueGetter<double?>? size,
     ValueGetter<Color?>? backgroundColor,
   }) {
     return RadioTheme(
       activeColor: activeColor == null ? this.activeColor : activeColor(),
       borderColor: borderColor == null ? this.borderColor : borderColor(),
+      hoverBorderColor:
+          hoverBorderColor == null ? this.hoverBorderColor : hoverBorderColor(),
       size: size == null ? this.size : size(),
       backgroundColor:
           backgroundColor == null ? this.backgroundColor : backgroundColor(),
@@ -63,13 +76,14 @@ class RadioTheme extends ComponentThemeData {
     return other is RadioTheme &&
         other.activeColor == activeColor &&
         other.borderColor == borderColor &&
+        other.hoverBorderColor == hoverBorderColor &&
         other.size == size &&
         other.backgroundColor == backgroundColor;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(activeColor, borderColor, size, backgroundColor);
+  int get hashCode => Object.hash(
+      activeColor, borderColor, hoverBorderColor, size, backgroundColor);
 }
 
 /// A radio button widget that displays a circular selection indicator.
@@ -265,6 +279,9 @@ class _RadioItemState<T> extends State<RadioItem<T>> {
   late FocusNode _focusNode;
 
   bool _focusing = false;
+  bool _hovering = false;
+  bool _pressing = false;
+  int _pendingMobilePresses = 0;
 
   @override
   void initState() {
@@ -284,73 +301,137 @@ class _RadioItemState<T> extends State<RadioItem<T>> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final radioTheme = ComponentTheme.maybeOf<RadioTheme>(context);
     final groupData = Data.maybeOf<RadioGroupData<T>>(context);
     final group = Data.maybeOf<RadioGroupState<T>>(context);
     assert(groupData != null,
         'RadioItem<$T> must be a descendant of RadioGroup<$T>');
-    return GestureDetector(
-      onTap: widget.enabled && groupData?.enabled == true
-          ? () {
+    final enabled = widget.enabled && groupData?.enabled == true;
+    final selected = groupData?.selectedItem == widget.value;
+    final highlighted =
+        enabled && (_pressing || (!isMobile(theme.platform) && _hovering));
+    final mouseCursor =
+        enabled ? SystemMouseCursors.basic : SystemMouseCursors.forbidden;
+    final highlightedBorderColor = styleValue(
+      defaultValue: theme.colorScheme.primary,
+      themeValue: radioTheme?.hoverBorderColor,
+    );
+    return MouseRegion(
+      cursor: mouseCursor,
+      onEnter: enabled && !isMobile(theme.platform)
+          ? (_) => _setHovering(true)
+          : null,
+      onExit: enabled && !isMobile(theme.platform)
+          ? (_) => _setHovering(false)
+          : null,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: enabled ? () => _select(context, group) : null,
+        onTapDown: enabled && isMobile(theme.platform)
+            ? (_) => setState(() {
+                  _pressing = true;
+                })
+            : null,
+        onTapCancel: enabled && isMobile(theme.platform)
+            ? () => setState(() {
+                  _pressing = false;
+                })
+            : null,
+        child: FocusableActionDetector(
+          focusNode: _focusNode,
+          mouseCursor: mouseCursor,
+          onShowFocusHighlight: (value) {
+            if (value && enabled) {
               group?._setSelected(widget.value);
             }
-          : null,
-      child: FocusableActionDetector(
-        focusNode: _focusNode,
-        mouseCursor: widget.enabled && groupData?.enabled == true
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.forbidden,
-        onShowFocusHighlight: (value) {
-          if (value && widget.enabled && groupData?.enabled == true) {
-            group?._setSelected(widget.value);
-          }
-          if (value != _focusing) {
-            setState(() {
-              _focusing = value;
-            });
-          }
-        },
-        actions: {
-          NextItemIntent: CallbackAction<NextItemIntent>(
-            onInvoke: (intent) {
-              if (group != null) {
-                group._setSelected(widget.value);
-              }
-              return null;
-            },
-          ),
-          PreviousItemIntent: CallbackAction<PreviousItemIntent>(
-            onInvoke: (intent) {
-              if (group != null) {
-                group._setSelected(widget.value);
-              }
-              return null;
-            },
-          ),
-        },
-        child: Data<RadioGroupData<T>>.boundary(
-          child: Data<_RadioItemState<T>>.boundary(
-            child: IntrinsicHeight(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (widget.leading != null) widget.leading!,
-                  if (widget.leading != null)
-                    SizedBox(width: 8 * theme.scaling),
-                  Radio(
-                      value: groupData?.selectedItem == widget.value,
-                      focusing:
-                          _focusing && groupData?.selectedItem == widget.value),
-                  if (widget.trailing != null)
-                    SizedBox(width: 8 * theme.scaling),
-                  if (widget.trailing != null) widget.trailing!,
-                ],
+            if (value != _focusing) {
+              setState(() {
+                _focusing = value;
+              });
+            }
+          },
+          onShowHoverHighlight: (value) {
+            _setHovering(value);
+          },
+          actions: {
+            NextItemIntent: CallbackAction<NextItemIntent>(
+              onInvoke: (intent) {
+                if (group != null) {
+                  group._setSelected(widget.value);
+                }
+                return null;
+              },
+            ),
+            PreviousItemIntent: CallbackAction<PreviousItemIntent>(
+              onInvoke: (intent) {
+                if (group != null) {
+                  group._setSelected(widget.value);
+                }
+                return null;
+              },
+            ),
+          },
+          child: Data<RadioGroupData<T>>.boundary(
+            child: Data<_RadioItemState<T>>.boundary(
+              child: IntrinsicHeight(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (widget.leading != null) widget.leading!,
+                    if (widget.leading != null)
+                      SizedBox(width: 8 * theme.scaling),
+                    Radio(
+                      value: selected,
+                      focusing: _focusing && selected,
+                      borderColor: highlighted || selected
+                          ? highlightedBorderColor
+                          : null,
+                    ),
+                    if (widget.trailing != null)
+                      SizedBox(width: 8 * theme.scaling),
+                    if (widget.trailing != null) widget.trailing!,
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  void _setHovering(bool value) {
+    if (value != _hovering) {
+      setState(() {
+        _hovering = value;
+      });
+    }
+  }
+
+  void _select(BuildContext context, RadioGroupState<T>? group) {
+    unawaited(_selectAfterFeedback(context, group));
+  }
+
+  Future<void> _selectAfterFeedback(
+      BuildContext context, RadioGroupState<T>? group) async {
+    if (isMobile(Theme.of(context).platform)) {
+      _pendingMobilePresses += 1;
+      setState(() {
+        _pressing = true;
+      });
+      await Future<void>.delayed(kDefaultDuration);
+      if (!mounted) {
+        return;
+      }
+      _pendingMobilePresses -= 1;
+      if (_pendingMobilePresses == 0) {
+        setState(() {
+          _pressing = false;
+        });
+      }
+    }
+    group?._setSelected(widget.value);
   }
 }
 
@@ -509,6 +590,8 @@ class _RadioCardState<T> extends State<RadioCard<T>> {
   late FocusNode _focusNode;
   bool _focusing = false;
   bool _hovering = false;
+  bool _pressing = false;
+  int _pendingMobilePresses = 0;
 
   @override
   void initState() {
@@ -536,125 +619,142 @@ class _RadioCardState<T> extends State<RadioCard<T>> {
     final group = Data.maybeOf<RadioGroupState<T>>(context);
     assert(groupData != null,
         'RadioCard<$T> must be a descendant of RadioGroup<$T>');
-    return GestureDetector(
-      onTap: widget.enabled && groupData?.enabled == true
-          ? () {
+    final enabled = widget.enabled && groupData?.enabled == true;
+    final selected = groupData?.selectedItem == widget.value;
+    final highlighted =
+        enabled && (_pressing || (!isMobile(theme.platform) && _hovering));
+    final selectedFillColor = widget.filled && selected
+        ? theme.colorScheme.primary.scaleAlpha(0.1)
+        : Colors.transparent;
+    final defaultHoverColor = widget.filled && selected
+        ? theme.colorScheme.primary.scaleAlpha(0.16)
+        : theme.colorScheme.accent;
+    final mouseCursor = enabled
+        ? styleValue(
+            defaultValue: SystemMouseCursors.basic,
+            themeValue: componentTheme?.enabledCursor)
+        : styleValue(
+            defaultValue: SystemMouseCursors.forbidden,
+            themeValue: componentTheme?.disabledCursor);
+    return MouseRegion(
+      cursor: mouseCursor,
+      onEnter: enabled && !isMobile(theme.platform)
+          ? (_) => _setHovering(true)
+          : null,
+      onExit: enabled && !isMobile(theme.platform)
+          ? (_) => _setHovering(false)
+          : null,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: enabled ? () => _select(context, group) : null,
+        onTapDown: enabled && isMobile(theme.platform)
+            ? (_) => setState(() {
+                  _pressing = true;
+                })
+            : null,
+        onTapCancel: enabled && isMobile(theme.platform)
+            ? () => setState(() {
+                  _pressing = false;
+                })
+            : null,
+        child: FocusableActionDetector(
+          focusNode: _focusNode,
+          actions: {
+            NextItemIntent: CallbackAction<NextItemIntent>(
+              onInvoke: (intent) {
+                if (group != null) {
+                  group._setSelected(widget.value);
+                }
+                return null;
+              },
+            ),
+            PreviousItemIntent: CallbackAction<PreviousItemIntent>(
+              onInvoke: (intent) {
+                if (group != null) {
+                  group._setSelected(widget.value);
+                }
+                return null;
+              },
+            ),
+          },
+          mouseCursor: mouseCursor,
+          onShowFocusHighlight: (value) {
+            if (value && enabled) {
               group?._setSelected(widget.value);
             }
-          : null,
-      child: FocusableActionDetector(
-        focusNode: _focusNode,
-        actions: {
-          NextItemIntent: CallbackAction<NextItemIntent>(
-            onInvoke: (intent) {
-              if (group != null) {
-                group._setSelected(widget.value);
-              }
-              return null;
-            },
-          ),
-          PreviousItemIntent: CallbackAction<PreviousItemIntent>(
-            onInvoke: (intent) {
-              if (group != null) {
-                group._setSelected(widget.value);
-              }
-              return null;
-            },
-          ),
-        },
-        mouseCursor: widget.enabled && groupData?.enabled == true
-            ? styleValue(
-                defaultValue: SystemMouseCursors.click,
-                themeValue: componentTheme?.enabledCursor)
-            : styleValue(
-                defaultValue: SystemMouseCursors.forbidden,
-                themeValue: componentTheme?.disabledCursor),
-        onShowFocusHighlight: (value) {
-          if (value && widget.enabled && groupData?.enabled == true) {
-            group?._setSelected(widget.value);
-          }
-          if (value != _focusing) {
-            setState(() {
-              _focusing = value;
-            });
-          }
-        },
-        onShowHoverHighlight: (value) {
-          if (value != _hovering) {
-            setState(() {
-              _hovering = value;
-            });
-          }
-        },
-        child: Data<RadioGroupData<T>>.boundary(
-          child: Data<_RadioCardState<T>>.boundary(
-            child: Card(
-              borderColor: groupData?.selectedItem == widget.value
-                  ? styleValue(
-                      defaultValue: theme.colorScheme.primary,
-                      themeValue: componentTheme?.selectedBorderColor,
-                    )
-                  : styleValue(
-                      defaultValue: theme.colorScheme.muted,
-                      themeValue: componentTheme?.borderColor,
-                    ),
-              borderWidth: groupData?.selectedItem == widget.value
-                  ? styleValue(
-                      defaultValue: 2 * theme.scaling,
-                      themeValue: componentTheme?.selectedBorderWidth,
-                    )
-                  : styleValue(
-                      defaultValue: 1 * theme.scaling,
-                      themeValue: componentTheme?.borderWidth,
-                    ),
-              filled: true,
-              fillColor: _hovering
-                  ? styleValue(
-                      defaultValue: widget.filled &&
-                              groupData?.selectedItem == widget.value
-                          ? theme.colorScheme.primary.scaleAlpha(0.1)
-                          : Colors.transparent,
-                      themeValue: componentTheme?.hoverColor,
-                    )
-                  : styleValue(
-                      defaultValue: widget.filled &&
-                              groupData?.selectedItem == widget.value
-                          ? theme.colorScheme.primary.scaleAlpha(0.1)
-                          : Colors.transparent,
-                      themeValue: componentTheme?.color,
-                    ),
-              borderRadius: styleValue(
-                  defaultValue: theme.borderRadiusLg,
-                  themeValue: componentTheme?.borderRadius),
-              padding: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              duration: kDefaultDuration,
-              child: Container(
-                padding: styleValue(
-                  defaultValue: EdgeInsets.all(densityContainerPadding),
-                  themeValue: componentTheme?.padding,
-                ),
-                child: AnimatedPadding(
-                  duration: kDefaultDuration,
-                  padding: groupData?.selectedItem == widget.value
-                      ? styleValue(
-                          defaultValue: EdgeInsets.zero,
-                          themeValue: componentTheme?.borderWidth != null
-                              ? EdgeInsets.all(componentTheme!.borderWidth!)
-                              : null,
-                        )
-                      // to compensate for the border width
-                      : styleValue(
-                          defaultValue: EdgeInsets.all(densityGap * 0.125),
-                          themeValue: componentTheme?.borderWidth != null &&
-                                  componentTheme?.selectedBorderWidth != null
-                              ? EdgeInsets.all(
-                                  componentTheme!.borderWidth! -
-                                      componentTheme.selectedBorderWidth!,
-                                )
-                              : null,
-                        ),
-                  child: widget.child,
+            if (value != _focusing) {
+              setState(() {
+                _focusing = value;
+              });
+            }
+          },
+          onShowHoverHighlight: (value) {
+            _setHovering(value);
+          },
+          child: Data<RadioGroupData<T>>.boundary(
+            child: Data<_RadioCardState<T>>.boundary(
+              child: Card(
+                borderColor: selected || highlighted
+                    ? styleValue(
+                        defaultValue: theme.colorScheme.primary,
+                        themeValue: componentTheme?.selectedBorderColor,
+                      )
+                    : styleValue(
+                        defaultValue: theme.colorScheme.muted,
+                        themeValue: componentTheme?.borderColor,
+                      ),
+                borderWidth: selected
+                    ? styleValue(
+                        defaultValue: 2 * theme.scaling,
+                        themeValue: componentTheme?.selectedBorderWidth,
+                      )
+                    : styleValue(
+                        defaultValue: 1 * theme.scaling,
+                        themeValue: componentTheme?.borderWidth,
+                      ),
+                filled: true,
+                fillColor: highlighted
+                    ? styleValue(
+                        defaultValue: defaultHoverColor,
+                        themeValue: componentTheme?.hoverColor,
+                      )
+                    : styleValue(
+                        defaultValue: selectedFillColor,
+                        themeValue: componentTheme?.color,
+                      ),
+                borderRadius: styleValue(
+                    defaultValue: theme.borderRadiusLg,
+                    themeValue: componentTheme?.borderRadius),
+                padding: EdgeInsets.zero,
+                clipBehavior: Clip.antiAlias,
+                duration: kDefaultDuration,
+                child: Container(
+                  padding: styleValue(
+                    defaultValue: EdgeInsets.all(densityContainerPadding),
+                    themeValue: componentTheme?.padding,
+                  ),
+                  child: AnimatedPadding(
+                    duration: kDefaultDuration,
+                    padding: selected
+                        ? styleValue(
+                            defaultValue: EdgeInsets.zero,
+                            themeValue: componentTheme?.borderWidth != null
+                                ? EdgeInsets.all(componentTheme!.borderWidth!)
+                                : null,
+                          )
+                        // to compensate for the border width
+                        : styleValue(
+                            defaultValue: EdgeInsets.all(densityGap * 0.125),
+                            themeValue: componentTheme?.borderWidth != null &&
+                                    componentTheme?.selectedBorderWidth != null
+                                ? EdgeInsets.all(
+                                    componentTheme!.borderWidth! -
+                                        componentTheme.selectedBorderWidth!,
+                                  )
+                                : null,
+                          ),
+                    child: widget.child,
+                  ),
                 ),
               ),
             ),
@@ -662,6 +762,39 @@ class _RadioCardState<T> extends State<RadioCard<T>> {
         ),
       ),
     );
+  }
+
+  void _setHovering(bool value) {
+    if (value != _hovering) {
+      setState(() {
+        _hovering = value;
+      });
+    }
+  }
+
+  void _select(BuildContext context, RadioGroupState<T>? group) {
+    unawaited(_selectAfterFeedback(context, group));
+  }
+
+  Future<void> _selectAfterFeedback(
+      BuildContext context, RadioGroupState<T>? group) async {
+    if (isMobile(Theme.of(context).platform)) {
+      _pendingMobilePresses += 1;
+      setState(() {
+        _pressing = true;
+      });
+      await Future<void>.delayed(kDefaultDuration);
+      if (!mounted) {
+        return;
+      }
+      _pendingMobilePresses -= 1;
+      if (_pendingMobilePresses == 0) {
+        setState(() {
+          _pressing = false;
+        });
+      }
+    }
+    group?._setSelected(widget.value);
   }
 }
 

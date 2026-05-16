@@ -78,7 +78,7 @@ class ChipButton extends StatelessWidget {
             if (states.contains(WidgetState.disabled)) {
               return SystemMouseCursors.basic;
             }
-            return SystemMouseCursors.click;
+            return SystemMouseCursors.basic;
           },
           padding: (context, states) {
             return padding;
@@ -191,7 +191,7 @@ class Chip extends StatelessWidget {
       style: baseStyle.copyWith(
         mouseCursor: (context, states, value) {
           return onPressed != null
-              ? SystemMouseCursors.click
+              ? SystemMouseCursors.basic
               : SystemMouseCursors.basic;
         },
         padding: (context, states, value) {

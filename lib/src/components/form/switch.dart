@@ -417,7 +417,7 @@ class _SwitchState extends State<Switch> with FormValueSupplier<bool, Switch> {
             SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
           },
           mouseCursor: _enabled
-              ? SystemMouseCursors.click
+              ? SystemMouseCursors.basic
               : SystemMouseCursors.forbidden,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,

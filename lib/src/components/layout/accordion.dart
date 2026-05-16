@@ -614,7 +614,7 @@ class _AccordionTriggerState extends State<AccordionTrigger> {
         _item?._dispatchToggle();
       },
       child: FocusableActionDetector(
-        mouseCursor: SystemMouseCursors.click,
+        mouseCursor: SystemMouseCursors.basic,
         onShowFocusHighlight: (value) {
           setState(() {
             _focusing = value;

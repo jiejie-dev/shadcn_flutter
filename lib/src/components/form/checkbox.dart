@@ -27,6 +27,11 @@ class CheckboxTheme extends ComponentThemeData {
   /// When null, uses the theme's border color.
   final Color? borderColor;
 
+  /// Border color shown for enabled unchecked checkboxes during hover or press.
+  ///
+  /// When null, uses the theme's primary color.
+  final Color? hoverBorderColor;
+
   /// Size of the checkbox square in logical pixels.
   ///
   /// Controls both width and height of the checkbox square. The checkmark
@@ -56,6 +61,7 @@ class CheckboxTheme extends ComponentThemeData {
     this.backgroundColor,
     this.activeColor,
     this.borderColor,
+    this.hoverBorderColor,
     this.size,
     this.gap,
     this.borderRadius,
@@ -77,6 +83,7 @@ class CheckboxTheme extends ComponentThemeData {
     ValueGetter<Color?>? backgroundColor,
     ValueGetter<Color?>? activeColor,
     ValueGetter<Color?>? borderColor,
+    ValueGetter<Color?>? hoverBorderColor,
     ValueGetter<double?>? size,
     ValueGetter<double?>? gap,
     ValueGetter<BorderRadiusGeometry?>? borderRadius,
@@ -86,6 +93,8 @@ class CheckboxTheme extends ComponentThemeData {
           backgroundColor == null ? this.backgroundColor : backgroundColor(),
       activeColor: activeColor == null ? this.activeColor : activeColor(),
       borderColor: borderColor == null ? this.borderColor : borderColor(),
+      hoverBorderColor:
+          hoverBorderColor == null ? this.hoverBorderColor : hoverBorderColor(),
       size: size == null ? this.size : size(),
       gap: gap == null ? this.gap : gap(),
       borderRadius: borderRadius == null ? this.borderRadius : borderRadius(),
@@ -99,6 +108,7 @@ class CheckboxTheme extends ComponentThemeData {
         other.backgroundColor == backgroundColor &&
         other.activeColor == activeColor &&
         other.borderColor == borderColor &&
+        other.hoverBorderColor == hoverBorderColor &&
         other.size == size &&
         other.gap == gap &&
         other.borderRadius == borderRadius;
@@ -109,6 +119,7 @@ class CheckboxTheme extends ComponentThemeData {
         backgroundColor,
         activeColor,
         borderColor,
+        hoverBorderColor,
         size,
         gap,
         borderRadius,
@@ -668,91 +679,101 @@ class _CheckboxState extends State<Checkbox>
         widgetValue: widget.borderColor,
         themeValue: compTheme?.borderColor,
         defaultValue: theme.colorScheme.border);
+    final hoverBorderColor = styleValue(
+        themeValue: compTheme?.hoverBorderColor,
+        defaultValue: theme.colorScheme.primary);
     final borderRadius = styleValue<BorderRadiusGeometry>(
         widgetValue: widget.borderRadius,
         themeValue: compTheme?.borderRadius,
         defaultValue: BorderRadius.circular(theme.radiusSm));
     return Clickable(
       enabled: widget.onChanged != null,
-      mouseCursor: enabled
-          ? const WidgetStatePropertyAll(SystemMouseCursors.click)
-          : const WidgetStatePropertyAll(SystemMouseCursors.forbidden),
+      mouseCursor: const WidgetStatePropertyAll(SystemMouseCursors.basic),
       onPressed: enabled ? _tap : null,
       enableFeedback: enabled,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.leading != null) widget.leading!.small().medium(),
-          if (widget.leading != null) Gap(gap),
-          AnimatedContainer(
-            duration: kDefaultDuration,
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: widget.state == CheckboxState.checked
+      child: StatedWidget.builder(
+        builder: (context, states) {
+          final highlighted = enabled &&
+              (states.pressed || (!isMobile(theme.platform) && states.hovered));
+          final effectiveBorderColor = !enabled
+              ? theme.colorScheme.muted
+              : widget.state == CheckboxState.checked
                   ? activeColor
-                  : backgroundColor,
-              borderRadius:
-                  optionallyResolveBorderRadius(context, borderRadius) ??
-                      BorderRadius.circular(theme.radiusSm),
-              border: Border.all(
-                color: !enabled
-                    ? theme.colorScheme.muted
-                    : widget.state == CheckboxState.checked
-                        ? activeColor
-                        : borderColor,
-                width: (_focusing ? 2 : 1) * scaling,
-              ),
-            ),
-            child: widget.state == CheckboxState.checked
-                ? Center(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 100),
-                      child: SizedBox(
-                        width: scaling * 9,
-                        height: scaling * 6.5,
-                        child: AnimatedValueBuilder(
-                          value: 1.0,
-                          initialValue: _shouldAnimate ? 0.0 : null,
-                          duration: const Duration(milliseconds: 300),
-                          curve: const IntervalDuration(
-                            start: Duration(milliseconds: 175),
-                            duration: Duration(milliseconds: 300),
-                          ),
-                          builder: (context, value, child) {
-                            return CustomPaint(
-                              painter: AnimatedCheckPainter(
-                                progress: value,
-                                color: theme.colorScheme.primaryForeground,
-                                strokeWidth: scaling * 1,
+                  : highlighted
+                      ? hoverBorderColor
+                      : borderColor;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.leading != null) widget.leading!.small().medium(),
+              if (widget.leading != null) Gap(gap),
+              AnimatedContainer(
+                duration: kDefaultDuration,
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  color: widget.state == CheckboxState.checked
+                      ? activeColor
+                      : backgroundColor,
+                  borderRadius:
+                      optionallyResolveBorderRadius(context, borderRadius) ??
+                          BorderRadius.circular(theme.radiusSm),
+                  border: Border.all(
+                    color: effectiveBorderColor,
+                    width: (_focusing ? 2 : 1) * scaling,
+                  ),
+                ),
+                child: widget.state == CheckboxState.checked
+                    ? Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 100),
+                          child: SizedBox(
+                            width: scaling * 9,
+                            height: scaling * 6.5,
+                            child: AnimatedValueBuilder(
+                              value: 1.0,
+                              initialValue: _shouldAnimate ? 0.0 : null,
+                              duration: const Duration(milliseconds: 300),
+                              curve: const IntervalDuration(
+                                start: Duration(milliseconds: 175),
+                                duration: Duration(milliseconds: 300),
                               ),
-                            );
-                          },
+                              builder: (context, value, child) {
+                                return CustomPaint(
+                                  painter: AnimatedCheckPainter(
+                                    progress: value,
+                                    color: theme.colorScheme.primaryForeground,
+                                    strokeWidth: scaling * 1,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 100),
+                          width: widget.state == CheckboxState.indeterminate
+                              ? scaling * 8
+                              : 0,
+                          height: widget.state == CheckboxState.indeterminate
+                              ? scaling * 8
+                              : 0,
+                          padding: EdgeInsets.zero,
+                          decoration: BoxDecoration(
+                            color: activeColor,
+                            borderRadius: BorderRadius.circular(theme.radiusXs),
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                : Center(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 100),
-                      width: widget.state == CheckboxState.indeterminate
-                          ? scaling * 8
-                          : 0,
-                      height: widget.state == CheckboxState.indeterminate
-                          ? scaling * 8
-                          : 0,
-                      padding: EdgeInsets.zero,
-                      decoration: BoxDecoration(
-                        color: activeColor,
-                        borderRadius: BorderRadius.circular(theme.radiusXs),
-                      ),
-                    ),
-                  ),
-          ),
-          if (widget.trailing != null) Gap(gap),
-          if (widget.trailing != null) widget.trailing!.small().medium(),
-        ],
+              ),
+              if (widget.trailing != null) Gap(gap),
+              if (widget.trailing != null) widget.trailing!.small().medium(),
+            ],
+          );
+        },
       ),
     );
   }

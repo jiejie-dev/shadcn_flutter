@@ -1006,7 +1006,7 @@ class _SliderState extends State<Slider>
                       : (widget.onChanged != null ||
                               widget.onChangeStart != null ||
                               widget.onChangeEnd != null)
-                          ? SystemMouseCursors.click
+                          ? SystemMouseCursors.basic
                           : SystemMouseCursors.basic,
                   child: widget.value.isRanged
                       ? buildRangedSlider(context, constraints, theme)

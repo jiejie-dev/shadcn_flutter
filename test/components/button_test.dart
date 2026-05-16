@@ -170,6 +170,26 @@ void main() {
       expect(pressed, isTrue);
     });
 
+    testWidgets('uses the basic cursor for enabled buttons', (tester) async {
+      await tester.pumpWidget(
+        SimpleApp(
+          child: Button.primary(
+            onPressed: () {},
+            child: const Text('Press Me'),
+          ),
+        ),
+      );
+
+      final detector = tester.widget<FocusableActionDetector>(
+        find.descendant(
+          of: find.byType(Button),
+          matching: find.byType(FocusableActionDetector),
+        ),
+      );
+
+      expect(detector.mouseCursor, SystemMouseCursors.basic);
+    });
+
     testWidgets('is disabled when onPressed is null', (tester) async {
       await tester.pumpWidget(
         SimpleApp(

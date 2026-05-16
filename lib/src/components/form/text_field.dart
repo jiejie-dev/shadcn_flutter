@@ -47,6 +47,16 @@ class TextFieldTheme extends ComponentThemeData {
   /// If `null`, uses default border from the theme.
   final Border? border;
 
+  /// Border color shown while an enabled text field is hovered on desktop.
+  ///
+  /// Defaults to a semi-transparent primary color, weaker than focus.
+  final Color? hoverBorderColor;
+
+  /// Border color shown while an enabled text field is focused.
+  ///
+  /// Defaults to the theme primary color.
+  final Color? focusedBorderColor;
+
   /// Creates a [TextFieldTheme].
   ///
   /// Parameters:
@@ -59,6 +69,8 @@ class TextFieldTheme extends ComponentThemeData {
     this.borderRadius,
     this.filled,
     this.padding,
+    this.hoverBorderColor,
+    this.focusedBorderColor,
   });
 
   /// Creates a copy of this theme with the given fields replaced.
@@ -69,12 +81,19 @@ class TextFieldTheme extends ComponentThemeData {
     ValueGetter<BorderRadiusGeometry?>? borderRadius,
     ValueGetter<bool?>? filled,
     ValueGetter<EdgeInsetsGeometry?>? padding,
+    ValueGetter<Color?>? hoverBorderColor,
+    ValueGetter<Color?>? focusedBorderColor,
   }) {
     return TextFieldTheme(
       border: border == null ? this.border : border(),
       borderRadius: borderRadius == null ? this.borderRadius : borderRadius(),
       filled: filled == null ? this.filled : filled(),
       padding: padding == null ? this.padding : padding(),
+      hoverBorderColor:
+          hoverBorderColor == null ? this.hoverBorderColor : hoverBorderColor(),
+      focusedBorderColor: focusedBorderColor == null
+          ? this.focusedBorderColor
+          : focusedBorderColor(),
     );
   }
 
@@ -85,11 +104,20 @@ class TextFieldTheme extends ComponentThemeData {
         other.border == border &&
         other.borderRadius == borderRadius &&
         other.filled == filled &&
-        other.padding == padding;
+        other.padding == padding &&
+        other.hoverBorderColor == hoverBorderColor &&
+        other.focusedBorderColor == focusedBorderColor;
   }
 
   @override
-  int get hashCode => Object.hash(border, borderRadius, filled, padding);
+  int get hashCode => Object.hash(
+        border,
+        borderRadius,
+        filled,
+        padding,
+        hoverBorderColor,
+        focusedBorderColor,
+      );
 }
 
 /// Standard height for text field components in logical pixels.
@@ -2525,11 +2553,19 @@ class TextFieldState extends State<TextField>
   }
 
   void _onEnter(PointerEnterEvent event) {
+    final hovered = _statesController.value.hovered;
     _statesController.update(WidgetState.hovered, true);
+    if (!hovered && !isMobile(Theme.of(context).platform)) {
+      setState(() {});
+    }
   }
 
   void _onExit(PointerExitEvent event) {
+    final hovered = _statesController.value.hovered;
     _statesController.update(WidgetState.hovered, false);
+    if (hovered && !isMobile(Theme.of(context).platform)) {
+      setState(() {});
+    }
   }
 
   Widget _wrapActions({required Widget child}) {
@@ -2766,13 +2802,19 @@ class TextFieldState extends State<TextField>
         theme.colorScheme.primary;
 
     // Use the default disabled color only if the box decoration was not set.
-    final effectiveBorder = styleValue(
+    final baseBorder = styleValue(
       defaultValue: Border.all(
         color: theme.colorScheme.border,
         strokeAlign: BorderSide.strokeAlignCenter,
       ),
       themeValue: compTheme?.border,
       widgetValue: widget.border,
+    );
+    final effectiveBorder = _resolveInteractiveBorder(
+      theme: theme,
+      compTheme: compTheme,
+      enabled: enabled,
+      border: baseBorder,
     );
     Decoration effectiveDecoration = widget.decoration ??
         BoxDecoration(
@@ -3012,6 +3054,7 @@ class TextFieldState extends State<TextField>
         minHeight: fontHeight + verticalPadding,
       ),
       child: WidgetStatesProvider(
+        controller: _statesController,
         states: {
           if (_effectiveFocusNode.hasFocus) WidgetState.hovered,
         },
@@ -3024,6 +3067,40 @@ class TextFieldState extends State<TextField>
   void didReplaceFormValue(String value) {
     effectiveController.text = value;
     widget.onChanged?.call(value);
+  }
+
+  Border _resolveInteractiveBorder({
+    required ThemeData theme,
+    required TextFieldTheme? compTheme,
+    required bool enabled,
+    required Border border,
+  }) {
+    if (!enabled) {
+      return border;
+    }
+    if (_effectiveFocusNode.hasFocus) {
+      return _copyBorderWithColor(
+        border,
+        compTheme?.focusedBorderColor ?? theme.colorScheme.primary,
+      );
+    }
+    if (!isMobile(theme.platform) && _statesController.value.hovered) {
+      return _copyBorderWithColor(
+        border,
+        compTheme?.hoverBorderColor ??
+            theme.colorScheme.primary.scaleAlpha(0.5),
+      );
+    }
+    return border;
+  }
+
+  Border _copyBorderWithColor(Border border, Color color) {
+    return Border(
+      top: border.top.copyWith(color: color),
+      right: border.right.copyWith(color: color),
+      bottom: border.bottom.copyWith(color: color),
+      left: border.left.copyWith(color: color),
+    );
   }
 }
 

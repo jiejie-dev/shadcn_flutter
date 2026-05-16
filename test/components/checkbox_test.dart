@@ -3,6 +3,24 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../test_helper.dart';
 
+BoxDecoration _checkboxDecoration(WidgetTester tester) {
+  final containers = tester.widgetList<AnimatedContainer>(
+    find.descendant(
+      of: find.byType(Checkbox),
+      matching: find.byType(AnimatedContainer),
+    ),
+  );
+  return containers.cast<AnimatedContainer>().firstWhere((container) {
+    final decoration = container.decoration;
+    return decoration is BoxDecoration && decoration.border is Border;
+  }).decoration! as BoxDecoration;
+}
+
+Color _checkboxBorderColor(WidgetTester tester) {
+  final border = _checkboxDecoration(tester).border! as Border;
+  return border.top.color;
+}
+
 void main() {
   group('Checkbox', () {
     testWidgets('renders in unchecked state', (tester) async {
@@ -60,6 +78,47 @@ void main() {
 
       await tester.tap(find.byType(Checkbox));
       expect(newState, equals(CheckboxState.checked));
+    });
+
+    testWidgets('highlights unchecked border while hovered on desktop',
+        (tester) async {
+      await tester.pumpWidget(
+        SimpleApp(
+          child: WidgetStatesProvider(
+            states: const {WidgetState.hovered},
+            child: Checkbox(
+              state: CheckboxState.unchecked,
+              onChanged: (value) {},
+            ),
+          ),
+        ),
+      );
+
+      final context = tester.element(find.byType(Checkbox));
+      expect(
+          _checkboxBorderColor(tester), Theme.of(context).colorScheme.primary);
+    });
+
+    testWidgets('highlights unchecked border while pressed on mobile',
+        (tester) async {
+      await tester.pumpWidget(
+        ShadcnApp(
+          theme: const ThemeData(platform: TargetPlatform.iOS),
+          home: Scaffold(
+            child: WidgetStatesProvider(
+              states: const {WidgetState.pressed},
+              child: Checkbox(
+                state: CheckboxState.unchecked,
+                onChanged: (value) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final context = tester.element(find.byType(Checkbox));
+      expect(
+          _checkboxBorderColor(tester), Theme.of(context).colorScheme.primary);
     });
 
     testWidgets('cycles tristate correctly', (tester) async {

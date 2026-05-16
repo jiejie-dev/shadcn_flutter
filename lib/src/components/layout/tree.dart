@@ -2472,7 +2472,7 @@ class _TreeItemViewState extends State<TreeItemView> {
                       widget.onPressed != null ||
                       (widget.onExpand != null &&
                           (widget.expandable ?? data.node.children.isNotEmpty))
-                  ? const WidgetStatePropertyAll(SystemMouseCursors.click)
+                  ? const WidgetStatePropertyAll(SystemMouseCursors.basic)
                   : const WidgetStatePropertyAll(SystemMouseCursors.basic),
               onDoubleTap: () {
                 if (widget.onDoublePressed != null) {

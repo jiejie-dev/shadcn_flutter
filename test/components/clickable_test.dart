@@ -33,6 +33,32 @@ void main() {
       expect(tapped, isTrue);
     });
 
+    testWidgets('delays mobile tap action until press feedback finishes',
+        (tester) async {
+      bool tapped = false;
+      await tester.pumpWidget(
+        ShadcnApp(
+          theme: const ThemeData(platform: TargetPlatform.iOS),
+          home: Scaffold(
+            child: Clickable(
+              onPressed: () => tapped = true,
+              child: const Text('Click Me'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Click Me'));
+
+      expect(tapped, isFalse);
+
+      await tester.pump(kDefaultDuration - const Duration(milliseconds: 1));
+      expect(tapped, isFalse);
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(tapped, isTrue);
+    });
+
     testWidgets('handles double tap', (tester) async {
       bool doubleTapped = false;
       await tester.pumpWidget(

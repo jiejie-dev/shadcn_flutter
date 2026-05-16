@@ -3473,7 +3473,7 @@ EdgeInsets _buttonZeroMargin(BuildContext context, Set<WidgetState> states) {
 MouseCursor _buttonMouseCursor(BuildContext context, Set<WidgetState> states) {
   return states.contains(WidgetState.disabled)
       ? SystemMouseCursors.basic
-      : SystemMouseCursors.click;
+      : SystemMouseCursors.basic;
 }
 
 EdgeInsets _buttonPadding(BuildContext context, Set<WidgetState> states) {

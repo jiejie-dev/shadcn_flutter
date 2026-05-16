@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -693,6 +695,7 @@ class _ClickableState extends State<Clickable> {
   late WidgetStatesController _controller;
   DateTime? _lastTap;
   int _tapCount = 0;
+  int _pendingMobilePresses = 0;
 
   @override
   void initState() {
@@ -727,6 +730,10 @@ class _ClickableState extends State<Clickable> {
   }
 
   void _onPressed() {
+    unawaited(_handlePressed());
+  }
+
+  Future<void> _handlePressed() async {
     if (!widget.enabled) return;
     Duration? deltaTap =
         _lastTap == null ? null : DateTime.now().difference(_lastTap!);
@@ -741,11 +748,30 @@ class _ClickableState extends State<Clickable> {
       widget.onDoubleTap!();
       _tapCount = 0;
     } else {
-      if (widget.onPressed != null) {
-        widget.onPressed!();
+      final onPressed = widget.onPressed;
+      if (onPressed != null) {
         if (widget.enableFeedback) {
-          feedbackForTap(context);
+          unawaited(feedbackForTap(context));
         }
+        if (isMobile(Theme.of(context).platform)) {
+          _pendingMobilePresses += 1;
+          if (!widget.disableHoverEffect) {
+            _updateState(WidgetState.hovered, true);
+          }
+          _updateState(WidgetState.pressed, true);
+          await Future<void>.delayed(kDefaultDuration);
+          if (!mounted) {
+            return;
+          }
+          _pendingMobilePresses -= 1;
+          if (_pendingMobilePresses == 0) {
+            if (!widget.disableHoverEffect) {
+              _updateState(WidgetState.hovered, false);
+            }
+            _updateState(WidgetState.pressed, false);
+          }
+        }
+        onPressed();
       }
     }
   }
@@ -784,7 +810,8 @@ class _ClickableState extends State<Clickable> {
     final enabled = widget.enabled;
     var widgetStates = Data.maybeOf<WidgetStatesData>(context)?.states ?? {};
     widgetStates = widgetStates.union(_controller.value);
-    Decoration? decoration = widget.decoration?.resolve(widgetStates);
+    Decoration? decoration = widget.decoration?.resolve(widgetStates) ??
+        _defaultDecoration(context, widgetStates);
     BorderRadiusGeometry borderRadius;
     BoxShape shape = BoxShape.rectangle;
     if (decoration is BoxDecoration) {
@@ -819,7 +846,7 @@ class _ClickableState extends State<Clickable> {
         onTertiaryLongPress: widget.onTertiaryLongPress,
         onTapDown: widget.onPressed != null
             ? (details) {
-                if (widget.enableFeedback) {
+                if (!widget.disableHoverEffect) {
                   // also dispatch hover
                   _updateState(WidgetState.hovered, true);
                 }
@@ -829,7 +856,7 @@ class _ClickableState extends State<Clickable> {
             : widget.onTapDown,
         onTapUp: widget.onPressed != null
             ? (details) {
-                if (widget.enableFeedback) {
+                if (!widget.disableHoverEffect) {
                   // also dispatch hover
                   _updateState(WidgetState.hovered, false);
                 }
@@ -839,7 +866,7 @@ class _ClickableState extends State<Clickable> {
             : widget.onTapUp,
         onTapCancel: widget.onPressed != null
             ? () {
-                if (widget.enableFeedback) {
+                if (!widget.disableHoverEffect) {
                   // also dispatch hover
                   _updateState(WidgetState.hovered, false);
                 }
@@ -1029,6 +1056,24 @@ class _ClickableState extends State<Clickable> {
       );
     }
     return animatedContainer;
+  }
+
+  Decoration? _defaultDecoration(
+      BuildContext context, Set<WidgetState> widgetStates) {
+    if (!widget.enabled || widgetStates.disabled) {
+      return null;
+    }
+    final theme = Theme.of(context);
+    final showHover = !isMobile(theme.platform) &&
+        widgetStates.hovered &&
+        !widget.disableHoverEffect;
+    if (!showHover && !widgetStates.pressed) {
+      return null;
+    }
+    return BoxDecoration(
+      color: theme.colorScheme.accent,
+      borderRadius: BorderRadius.circular(theme.radiusMd),
+    );
   }
 
   static Decoration? _lerpDecoration(Decoration? a, Decoration? b, double t) {

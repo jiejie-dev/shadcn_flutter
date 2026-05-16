@@ -1242,7 +1242,7 @@ class StepNumber extends StatelessWidget {
                     onPressed: onPressed,
                     mouseCursor: WidgetStatePropertyAll(
                       onPressed != null
-                          ? SystemMouseCursors.click
+                          ? SystemMouseCursors.basic
                           : SystemMouseCursors.basic,
                     ),
                     decoration: WidgetStateProperty.resolveWith(
@@ -1362,7 +1362,7 @@ class StepTitle extends StatelessWidget {
     final densityGap = theme.density.baseGap * scaling;
     return Clickable(
       mouseCursor: WidgetStatePropertyAll(
-          onPressed == null ? MouseCursor.defer : SystemMouseCursors.click),
+          onPressed == null ? MouseCursor.defer : SystemMouseCursors.basic),
       onPressed: onPressed,
       child: IntrinsicWidth(
         child: Column(
