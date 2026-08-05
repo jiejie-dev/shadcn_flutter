@@ -91,6 +91,40 @@ void main() {
       expect(find.text('Bordered Card'), findsOneWidget);
     });
 
+    testWidgets('paints the rounded border above opaque card content', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        SimpleApp(
+          child: Card(
+            padding: EdgeInsets.zero,
+            borderColor: Colors.red,
+            borderWidth: 2,
+            child: ColoredBox(
+              color: Colors.blue,
+              child: SizedBox(width: 120, height: 80),
+            ),
+          ),
+        ),
+      );
+
+      final outerContainer = tester.widget<AnimatedContainer>(
+        find
+            .descendant(
+              of: find.byType(OutlinedContainer),
+              matching: find.byType(AnimatedContainer),
+            )
+            .first,
+      );
+      final background = outerContainer.decoration! as BoxDecoration;
+      final foreground = outerContainer.foregroundDecoration! as BoxDecoration;
+
+      expect(background.border, isNull);
+      expect(foreground.border!.top.color, Colors.red);
+      expect(foreground.border!.top.width, 2);
+      expect(foreground.borderRadius, isNotNull);
+    });
+
     testWidgets('renders with box shadow', (tester) async {
       await tester.pumpWidget(
         SimpleApp(

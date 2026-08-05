@@ -343,13 +343,18 @@ class _OutlinedContainerState extends State<OutlinedContainer> {
       height: widget.height,
       decoration: BoxDecoration(
         color: backgroundColor,
+        borderRadius: borderRadius,
+        boxShadow: boxShadow,
+      ),
+      // Keep the rounded outline above opaque card content so child fills and
+      // interaction overlays cannot cover only the straight border segments.
+      foregroundDecoration: BoxDecoration(
         border: Border.all(
           color: borderColor,
           width: borderWidth,
           style: borderStyle,
         ),
         borderRadius: borderRadius,
-        boxShadow: boxShadow,
       ),
       child: AnimatedContainer(
         duration: widget.duration ?? Duration.zero,
