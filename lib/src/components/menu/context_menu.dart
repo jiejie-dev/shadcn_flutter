@@ -513,6 +513,56 @@ Widget buildEditableTextContextMenu(
   }
 }
 
+/// Coordinates the lifecycle of context menus that should be mutually exclusive.
+///
+/// Share one controller between multiple [ContextMenu] widgets to ensure that
+/// opening one menu closes the previously open menu.
+class ContextMenuOverlayController {
+  /// Creates a context menu overlay controller.
+  ContextMenuOverlayController();
+
+  GlobalKey<OverlayHandlerStateMixin>? _key;
+  OverlayCompleter<Object?>? _entry;
+
+  /// Whether this controller currently owns an open context menu.
+  bool get isOpen => _entry != null && !_entry!.isCompleted;
+
+  /// Immediately closes the currently open context menu, if any.
+  void close() {
+    final key = _key;
+    final entry = _entry;
+    _key = null;
+    _entry = null;
+
+    if (entry == null || entry.isCompleted) return;
+    final state = key?.currentState;
+    if (state != null) {
+      state.close(true);
+    } else {
+      entry.remove();
+    }
+  }
+
+  /// Closes the current menu and releases the controller's references.
+  void dispose() {
+    close();
+  }
+
+  void _attach(
+    GlobalKey<OverlayHandlerStateMixin> key,
+    OverlayCompleter<Object?> entry,
+  ) {
+    _key = key;
+    _entry = entry;
+  }
+
+  void _detach(OverlayCompleter<Object?> entry) {
+    if (!identical(_entry, entry)) return;
+    _key = null;
+    _entry = null;
+  }
+}
+
 /// A widget that shows a context menu when right-clicked or long-pressed.
 ///
 /// Wraps a child widget and displays a customizable menu on context menu triggers.
@@ -543,6 +593,11 @@ class ContextMenu extends StatefulWidget {
   /// Whether the context menu is enabled.
   final bool enabled;
 
+  /// Coordinates this menu with other context menus that share the controller.
+  ///
+  /// Opening a menu closes the controller's previously open menu first.
+  final ContextMenuOverlayController? controller;
+
   /// Creates a [ContextMenu].
   ///
   /// Parameters:
@@ -557,7 +612,8 @@ class ContextMenu extends StatefulWidget {
       required this.items,
       this.behavior = HitTestBehavior.translucent,
       this.direction = Axis.vertical,
-      this.enabled = true});
+      this.enabled = true,
+      this.controller});
 
   @override
   State<ContextMenu> createState() => _ContextMenuState();
@@ -599,13 +655,13 @@ class _ContextMenuState extends State<ContextMenu> {
       onSecondaryTapDown: !widget.enabled
           ? null
           : (details) {
-              _showContextMenu(
-                  context, details.globalPosition, _children, widget.direction);
+              _showContextMenu(context, details.globalPosition, _children,
+                  widget.direction, widget.controller);
             },
       onLongPressStart: enableLongPress && widget.enabled
           ? (details) {
-              _showContextMenu(
-                  context, details.globalPosition, _children, widget.direction);
+              _showContextMenu(context, details.globalPosition, _children,
+                  widget.direction, widget.controller);
             }
           : null,
       child: widget.child,
@@ -618,63 +674,67 @@ Future<void> _showContextMenu(
   Offset position,
   ValueListenable<List<MenuItem>> children,
   Axis direction,
+  ContextMenuOverlayController? controller,
 ) async {
+  controller?.close();
   final key = GlobalKey<OverlayHandlerStateMixin>();
   final theme = Theme.of(context);
   final overlayManager = OverlayManager.of(context);
-  return overlayManager
-      .showMenu(
-        key: key,
-        context: context,
-        position: position + const Offset(8, 0),
-        alignment: Alignment.topLeft,
-        anchorAlignment: Alignment.topRight,
-        regionGroupId: key,
-        modal: true,
-        follow: false,
-        consumeOutsideTaps: false,
-        dismissBackdropFocus: false,
-        overlayBarrier: OverlayBarrier(
-          borderRadius: BorderRadius.circular(theme.radiusMd),
-          barrierColor: const Color(0xB2000000),
-        ),
-        builder: (context) {
-          return AnimatedBuilder(
-              animation: children,
-              builder: (context, child) {
-                bool isSheetOverlay =
-                    SheetOverlayHandler.isSheetOverlay(context);
-                return ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: 192,
-                  ),
-                  child: MenuGroup(
-                    itemPadding: isSheetOverlay
-                        ? const EdgeInsets.symmetric(horizontal: 8) *
-                            theme.scaling
-                        : EdgeInsets.zero,
-                    direction: direction,
-                    regionGroupId: key,
-                    subMenuOffset: const Offset(8, -4),
-                    onDismissed: () {
-                      closeOverlay(context);
-                    },
-                    builder: (context, children) {
-                      final compTheme =
-                          ComponentTheme.maybeOf<ContextMenuTheme>(context);
-                      return MenuPopup(
-                        surfaceOpacity: compTheme?.surfaceOpacity,
-                        surfaceBlur: compTheme?.surfaceBlur,
-                        children: children,
-                      );
-                    },
-                    children: children.value,
-                  ),
+  final entry = overlayManager.showMenu<Object?>(
+    key: key,
+    context: context,
+    position: position + const Offset(8, 0),
+    alignment: Alignment.topLeft,
+    anchorAlignment: Alignment.topRight,
+    regionGroupId: key,
+    modal: true,
+    follow: false,
+    consumeOutsideTaps: false,
+    dismissBackdropFocus: false,
+    overlayBarrier: OverlayBarrier(
+      borderRadius: BorderRadius.circular(theme.radiusMd),
+      barrierColor: const Color(0xB2000000),
+    ),
+    builder: (context) {
+      return AnimatedBuilder(
+        animation: children,
+        builder: (context, child) {
+          bool isSheetOverlay = SheetOverlayHandler.isSheetOverlay(context);
+          return ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 192),
+            child: MenuGroup(
+              itemPadding: isSheetOverlay
+                  ? const EdgeInsets.symmetric(horizontal: 8) * theme.scaling
+                  : EdgeInsets.zero,
+              direction: direction,
+              regionGroupId: key,
+              subMenuOffset: const Offset(8, -4),
+              onDismissed: () {
+                closeOverlay(context);
+              },
+              builder: (context, children) {
+                final compTheme = ComponentTheme.maybeOf<ContextMenuTheme>(
+                  context,
                 );
-              });
+                return MenuPopup(
+                  surfaceOpacity: compTheme?.surfaceOpacity,
+                  surfaceBlur: compTheme?.surfaceBlur,
+                  children: children,
+                );
+              },
+              children: children.value,
+            ),
+          );
         },
-      )
-      .future;
+      );
+    },
+  );
+  controller?._attach(key, entry);
+  try {
+    await entry.future;
+  } finally {
+    controller?._detach(entry);
+  }
 }
 
 /// Internal widget for rendering a context menu popup.
