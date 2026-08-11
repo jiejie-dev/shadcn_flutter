@@ -1,3 +1,7 @@
+## 0.1.0+1
+
+ - **FIX**(shadcn_flutter): 修复不透明内容遮挡卡片圆角边框.
+
 ## 0.1.0
 
 > Note: This release has breaking changes.
