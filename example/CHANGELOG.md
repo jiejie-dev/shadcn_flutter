@@ -1,3 +1,7 @@
+## 1.3.0
+
+ - **FEAT**: update version to 0.1.3 and add CHANGELOG entries for shadcn_flutter and example project.
+
 ## 1.2.0
 
  - **FEAT**: update version to 0.1.2 and add CHANGELOG entries for shadcn_flutter and example project.
