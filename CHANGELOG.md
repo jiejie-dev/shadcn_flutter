@@ -1,3 +1,8 @@
+## 0.1.7
+
+ - **FIX**(shadcn_flutter): 恢复按钮内容默认居中.
+ - **FEAT**: update version to 0.1.6 and add CHANGELOG entries for shadcn_flutter and example project.
+
 ## 0.1.6
 
  - **FEAT**: update version to 0.1.5 and add CHANGELOG entries for shadcn_flutter and example project.
