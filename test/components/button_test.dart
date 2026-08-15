@@ -246,16 +246,45 @@ void main() {
     testWidgets('respects custom alignment', (tester) async {
       await tester.pumpWidget(
         SimpleApp(
-          child: Button.primary(
-            onPressed: () {},
-            alignment: Alignment.centerLeft,
-            child: Text('Left Aligned'),
+          child: Center(
+            child: SizedBox(
+              width: 240,
+              child: Button.primary(
+                onPressed: () {},
+                alignment: Alignment.centerLeft,
+                child: Text('Left Aligned'),
+              ),
+            ),
           ),
         ),
       );
 
-      expect(find.byType(Button), findsOneWidget);
-      expect(find.text('Left Aligned'), findsOneWidget);
+      final buttonCenter = tester.getCenter(find.byType(Button));
+      final labelCenter = tester.getCenter(find.text('Left Aligned'));
+
+      expect(labelCenter.dx, lessThan(buttonCenter.dx));
+    });
+
+    testWidgets('centers content by default in wide buttons', (tester) async {
+      await tester.pumpWidget(
+        SimpleApp(
+          child: Center(
+            child: SizedBox(
+              width: 240,
+              child: Button.primary(
+                onPressed: () {},
+                child: Text('Centered'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final buttonCenter = tester.getCenter(find.byType(Button));
+      final labelCenter = tester.getCenter(find.text('Centered'));
+
+      expect(labelCenter.dx, closeTo(buttonCenter.dx, 0.01));
+      expect(labelCenter.dy, closeTo(buttonCenter.dy, 0.01));
     });
 
     testWidgets('handles long text content', (tester) async {

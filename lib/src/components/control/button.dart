@@ -717,8 +717,8 @@ class Button extends StatefulWidget {
   /// Alignment of the child content within the button.
   ///
   /// Controls how the [child] is positioned within the button's bounds. Defaults
-  /// to center alignment for most button types. When [leading] or [trailing] are
-  /// provided, defaults to start alignment.
+  /// to center alignment. Set this explicitly for buttons whose content should
+  /// use a different alignment.
   final AlignmentGeometry? alignment;
 
   /// Visual styling configuration for the button.
@@ -1543,17 +1543,14 @@ class ButtonState<T extends Button> extends State<T> {
   }
 
   Widget _buildAligned() {
-    if (widget.alignment != null) {
-      return AnimatedAlign(
-        duration: kDefaultDuration,
-        curve: Curves.easeInOut,
-        widthFactor: 1,
-        heightFactor: 1,
-        alignment: widget.alignment!,
-        child: widget.child,
-      );
-    }
-    return widget.child;
+    return AnimatedAlign(
+      duration: kDefaultDuration,
+      curve: Curves.easeInOut,
+      widthFactor: 1,
+      heightFactor: 1,
+      alignment: widget.alignment ?? Alignment.center,
+      child: widget.child,
+    );
   }
 }
 
