@@ -249,6 +249,12 @@ class TabPane<T> extends StatefulWidget {
   /// around the entire tab pane structure.
   final BorderSide? border;
 
+  /// Optional fill for inactive tabs. Null preserves the transparent default.
+  final Color? inactiveBackgroundColor;
+
+  /// Optional outline for inactive tabs; falls back to the active outline.
+  final BorderSide? inactiveBorder;
+
   /// The main content widget displayed in the content area.
   ///
   /// Type: `Widget`. This widget fills the content area above the tab bar
@@ -314,6 +320,8 @@ class TabPane<T> extends StatefulWidget {
     this.backgroundColor,
     this.border,
     this.onSort,
+    this.inactiveBackgroundColor,
+    this.inactiveBorder,
     required this.child,
     this.barHeight,
   });
@@ -369,15 +377,27 @@ class TabPaneState<T> extends State<TabPane<T>> {
         final hoverOrPressHighlight =
             !isFocused &&
             (data.index == _hoveredTabIndex || data.index == _pressedTabIndex);
+        final inactiveFill = widget.inactiveBackgroundColor;
+        final muted = !isFocused && tabGhost == null && inactiveFill != null;
+        final tabFill = muted
+            ? (hoverOrPressHighlight
+                  ? Color.lerp(inactiveFill, backgroundColor, .5)!
+                  : inactiveFill)
+            : backgroundColor;
+        final tabBorder = muted ? widget.inactiveBorder : null;
         return SizedBox(
           height: double.infinity,
           child: CustomPaint(
             painter: _TabItemPainter(
               borderRadius: borderRadius,
-              backgroundColor: backgroundColor,
-              isFocused: isFocused || tabGhost != null || hoverOrPressHighlight,
-              borderColor: borderColor,
-              borderWidth: borderWidth,
+              backgroundColor: tabFill,
+              isFocused:
+                  isFocused ||
+                  tabGhost != null ||
+                  hoverOrPressHighlight ||
+                  muted,
+              borderColor: tabBorder?.color ?? borderColor,
+              borderWidth: tabBorder?.width ?? borderWidth,
             ),
             child: Container(
               padding: EdgeInsets.symmetric(

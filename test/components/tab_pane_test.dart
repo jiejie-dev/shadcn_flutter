@@ -6,6 +6,51 @@ import '../test_helper.dart';
 
 void main() {
   group('TabPane', () {
+    testWidgets('keeps inactive outline visible with a softer fill', (
+      tester,
+    ) async {
+      const inactive = Color(0xffdddddd);
+      const outline = BorderSide(color: Color(0xffaaaaaa));
+      await _pumpTabPane(
+        tester,
+        child: TabPane<String>(
+          items: const [TabPaneData('First'), TabPaneData('Second')],
+          focused: 0,
+          onFocused: (_) {},
+          backgroundColor: const Color(0xffffffff),
+          inactiveBackgroundColor: inactive,
+          inactiveBorder: outline,
+          itemBuilder: (_, item, _) => TabItem(child: Text(item.data)),
+          child: const Text('Content'),
+        ),
+      );
+      dynamic painter(String label) => tester
+          .widget<CustomPaint>(
+            find
+                .ancestor(
+                  of: find.text(label),
+                  matching: find.byType(CustomPaint),
+                )
+                .first,
+          )
+          .painter;
+      expect(painter('Second').isFocused, isTrue);
+      expect(painter('Second').backgroundColor, inactive);
+      expect(painter('Second').borderColor, outline.color);
+      expect(painter('First').backgroundColor, const Color(0xffffffff));
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.text('Second')));
+      await tester.pump();
+      expect(
+        painter('Second').backgroundColor,
+        Color.lerp(inactive, const Color(0xffffffff), .5),
+      );
+      await mouse.moveTo(Offset.zero);
+      await tester.pump();
+      expect(painter('Second').backgroundColor, inactive);
+      await mouse.removePointer();
+    });
     testWidgets('highlights an unfocused tab while hovered on desktop', (
       tester,
     ) async {
