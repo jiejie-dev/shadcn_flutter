@@ -1084,6 +1084,17 @@ class _ClickableState extends State<Clickable> {
       return b;
     }
     if (a is BoxDecoration && b is BoxDecoration) {
+      // Transparent black must not tint the intermediate frames of a fade.
+      // Preserve the visible endpoint's RGB and animate only its opacity.
+      final colorA = a.color;
+      final colorB = b.color;
+      if (colorA != null && colorB != null) {
+        if (colorA.a == 0 && colorB.a > 0) {
+          a = a.copyWith(color: colorB.withValues(alpha: 0));
+        } else if (colorB.a == 0 && colorA.a > 0) {
+          b = b.copyWith(color: colorA.withValues(alpha: 0));
+        }
+      }
       if (a.shape != b.shape &&
           a.backgroundBlendMode == null &&
           b.backgroundBlendMode == null) {
