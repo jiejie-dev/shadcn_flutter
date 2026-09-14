@@ -2446,25 +2446,21 @@ class _TreeItemViewState extends State<TreeItemView> {
               },
               decoration: WidgetStateProperty.resolveWith(
                 (states) {
-                  if (states.contains(WidgetState.selected)) {
-                    if (states.contains(WidgetState.focused)) {
-                      return BoxDecoration(
-                        color: theme.colorScheme.primary.scaleAlpha(0.1),
-                        borderRadius: _borderRadiusFromPosition(
-                          data.selectionPosition,
-                          theme.radiusMd,
-                        ),
-                      );
-                    }
-                    return BoxDecoration(
-                      color: theme.colorScheme.primary.scaleAlpha(0.05),
-                      borderRadius: _borderRadiusFromPosition(
-                        data.selectionPosition,
-                        theme.radiusMd,
-                      ),
-                    );
-                  }
-                  return const BoxDecoration();
+                  final selected = states.contains(WidgetState.selected);
+                  final disabled = states.contains(WidgetState.disabled);
+                  final hovered = !disabled && states.contains(WidgetState.hovered);
+                  final pressed = !disabled && states.contains(WidgetState.pressed);
+                  final focused = !disabled && states.contains(WidgetState.focused);
+                  final alpha = selected
+                      ? (pressed ? 0.20 : hovered ? 0.16 : focused ? 0.12 : 0.10)
+                      : (pressed ? 0.10 : hovered ? 0.06 : 0.0);
+                  return BoxDecoration(
+                    color: theme.colorScheme.primary.scaleAlpha(alpha),
+                    borderRadius: _borderRadiusFromPosition(
+                      data.selectionPosition,
+                      theme.radiusMd,
+                    ),
+                  );
                 },
               ),
               behavior: HitTestBehavior.translucent,
@@ -2472,7 +2468,7 @@ class _TreeItemViewState extends State<TreeItemView> {
                       widget.onPressed != null ||
                       (widget.onExpand != null &&
                           (widget.expandable ?? data.node.children.isNotEmpty))
-                  ? const WidgetStatePropertyAll(SystemMouseCursors.basic)
+                  ? const WidgetStatePropertyAll(SystemMouseCursors.click)
                   : const WidgetStatePropertyAll(SystemMouseCursors.basic),
               onDoubleTap: () {
                 if (widget.onDoublePressed != null) {
