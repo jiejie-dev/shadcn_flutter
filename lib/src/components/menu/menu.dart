@@ -622,8 +622,9 @@ class _MenuButtonState extends State<MenuButton> {
             itemPadding = EdgeInsets.symmetric(horizontal: densityGap * 0.5);
           }
           return ConstrainedBox(
-            constraints: const BoxConstraints(
-                  minWidth: 192, // 12rem
+            constraints: BoxConstraints(
+                  minWidth: ComponentTheme.maybeOf<ContextMenuTheme>(context)
+                          ?.minWidth ?? 192,
                 ) *
                 scaling,
             child: AnimatedBuilder(

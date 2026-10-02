@@ -4,6 +4,9 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Theme for [ContextMenuPopup] and context menu widgets.
 class ContextMenuTheme extends ComponentThemeData {
+  /// Minimum popup width in logical pixels before theme scaling.
+  final double minWidth;
+
   /// Surface opacity for the popup container.
   final double? surfaceOpacity;
 
@@ -11,14 +14,20 @@ class ContextMenuTheme extends ComponentThemeData {
   final double? surfaceBlur;
 
   /// Creates a [ContextMenuTheme].
-  const ContextMenuTheme({this.surfaceOpacity, this.surfaceBlur});
+  const ContextMenuTheme({
+    this.minWidth = 240,
+    this.surfaceOpacity,
+    this.surfaceBlur,
+  }) : assert(minWidth >= 0);
 
   /// Returns a copy of this theme with the given fields replaced.
   ContextMenuTheme copyWith({
+    ValueGetter<double>? minWidth,
     ValueGetter<double?>? surfaceOpacity,
     ValueGetter<double?>? surfaceBlur,
   }) {
     return ContextMenuTheme(
+      minWidth: minWidth == null ? this.minWidth : minWidth(),
       surfaceOpacity:
           surfaceOpacity == null ? this.surfaceOpacity : surfaceOpacity(),
       surfaceBlur: surfaceBlur == null ? this.surfaceBlur : surfaceBlur(),
@@ -29,12 +38,13 @@ class ContextMenuTheme extends ComponentThemeData {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is ContextMenuTheme &&
+        other.minWidth == minWidth &&
         other.surfaceOpacity == surfaceOpacity &&
         other.surfaceBlur == surfaceBlur;
   }
 
   @override
-  int get hashCode => Object.hash(surfaceOpacity, surfaceBlur);
+  int get hashCode => Object.hash(minWidth, surfaceOpacity, surfaceBlur);
 }
 
 /// Context menu for editable text fields on desktop platforms.
@@ -700,8 +710,9 @@ Future<void> _showContextMenu(
         animation: children,
         builder: (context, child) {
           bool isSheetOverlay = SheetOverlayHandler.isSheetOverlay(context);
-          return ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 192),
+          return ComponentTheme(
+            data: ComponentTheme.maybeOf<ContextMenuTheme>(context) ??
+                const ContextMenuTheme(),
             child: MenuGroup(
               itemPadding: isSheetOverlay
                   ? const EdgeInsets.symmetric(horizontal: 8) * theme.scaling
@@ -804,8 +815,9 @@ class ContextMenuPopup extends StatelessWidget {
             final theme = Theme.of(context);
             final densityContentPadding =
                 theme.density.baseContentPadding * theme.scaling;
-            return LimitedBox(
-              maxWidth: 192 * theme.scaling,
+            return ComponentTheme(
+              data: ComponentTheme.maybeOf<ContextMenuTheme>(context) ??
+                  const ContextMenuTheme(),
               child: MenuGroup(
                 direction: direction,
                 itemPadding: isSheetOverlay

@@ -195,7 +195,7 @@ class MenuPopup extends StatelessWidget {
                 horizontal: densityGap * 0.5,
               )
             : EdgeInsets.all(densityGap * 0.5));
-    return ModalContainer(
+    final popup = ModalContainer(
       borderRadius: styleValue(
           widgetValue: borderRadius,
           themeValue: compTheme?.borderRadius,
@@ -232,5 +232,15 @@ class MenuPopup extends StatelessWidget {
         ),
       ),
     ).normal();
+    // Context menu themes are captured by submenu overlays as well.
+    final contextTheme = ComponentTheme.maybeOf<ContextMenuTheme>(context);
+    return contextTheme == null
+        ? popup
+        : ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: contextTheme.minWidth * theme.scaling,
+            ),
+            child: popup,
+          );
   }
 }
