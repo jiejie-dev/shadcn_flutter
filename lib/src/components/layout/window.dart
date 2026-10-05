@@ -1144,6 +1144,10 @@ class _WindowWidgetState extends State<WindowWidget> with WindowHandle {
               ],
             ),
           );
+          windowClient = MouseRegion(
+            cursor: SystemMouseCursors.basic,
+            child: windowClient,
+          );
           // add transition
           windowClient = AnimatedValueBuilder(
               initialValue: 0.0,
@@ -2446,6 +2450,19 @@ class _WindowNavigatorState extends State<WindowNavigator>
                         relativeBounds: Rect.fromLTWH(0.5, 0, 0.5, 1),
                         shouldMinifyWindow: false,
                       ))),
+                  if (_draggingWindow.value != null)
+                    const GroupPositioned(
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.basic,
+                        opaque: false,
+                        hitTestBehavior: HitTestBehavior.translucent,
+                        child: SizedBox.expand(),
+                      ),
+                    ),
                 ],
               ),
             );
@@ -2743,12 +2760,14 @@ class WindowViewport {
         focused == other.focused &&
         alwaysOnTop == other.alwaysOnTop &&
         closed == other.closed &&
-        minify == other.minify;
+        minify == other.minify &&
+        ignorePointer == other.ignorePointer;
   }
 
   @override
   int get hashCode =>
-      Object.hash(size, navigator, focused, alwaysOnTop, closed, minify);
+      Object.hash(size, navigator, focused, alwaysOnTop, closed, minify,
+          ignorePointer);
 }
 
 /// Default window actions widget providing minimize, maximize, and close buttons.
@@ -2812,6 +2831,13 @@ class WindowActions extends StatelessWidget {
           ),
         if (handle?.closable ?? true)
           IconButton.ghost(
+            variance: ButtonVariance.ghost
+                .withBackgroundColor(
+                  hoverColor: Theme.of(context).colorScheme.destructive,
+                )
+                .withForegroundColor(
+                  hoverColor: Theme.of(context).colorScheme.destructiveForeground,
+                ),
             icon: const Icon(Icons.close),
             size: ButtonSize.small,
             onPressed: () {
