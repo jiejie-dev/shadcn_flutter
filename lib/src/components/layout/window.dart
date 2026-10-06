@@ -1369,7 +1369,16 @@ class _WindowWidgetState extends State<WindowWidget> with WindowHandle {
               }
               return GroupPositioned.fromRect(rect: rect, child: child!);
             },
-            child: windowContainer,
+            child: Offstage(
+              offstage: minimized,
+              child: TickerMode(
+                enabled: !minimized || (_viewport?.closed ?? false),
+                child: ExcludeFocus(
+                  excluding: minimized,
+                  child: windowContainer,
+                ),
+              ),
+            ),
           );
         },
       ),
