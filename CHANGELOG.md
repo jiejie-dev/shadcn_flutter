@@ -1,3 +1,9 @@
+## 0.2.0+1
+
+ - **FIX**(shadcn_flutter): 修复窗口最小化后未隐藏的问题.
+ - **FIX**(shadcn_flutter): 修复窗口拖动指针和关闭按钮反馈.
+ - **FIX**(shadcn_flutter): 统一右键菜单默认最小宽度.
+
 ## 0.2.0
 
 > Note: This release has breaking changes.

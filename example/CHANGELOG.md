@@ -1,3 +1,7 @@
+## 1.8.1
+
+ - Update a dependency to the latest release.
+
 ## 1.8.0
 
  - **FEAT**: update version to 0.1.7 and add CHANGELOG entries for shadcn_flutter and example project.
