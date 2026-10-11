@@ -426,7 +426,15 @@ class _ShadcnAppState extends State<ShadcnApp> {
       initialRecentColors: widget.initialRecentColors,
       maxRecentColors: widget.maxRecentColors,
       onRecentColorsChanged: widget.onRecentColorsChanged,
-      builder: widget.builder,
+      builder: (context, child) => m.Theme(
+        data: widget.materialTheme ?? _createMaterialTheme(Theme.of(context)),
+        child: Builder(
+          builder: (context) =>
+              widget.builder?.call(context, child) ??
+              child ??
+              const SizedBox.shrink(),
+        ),
+      ),
       enableScrollInterception: widget.enableScrollInterception,
       darkTheme: widget.darkTheme,
       popoverHandler: widget.popoverHandler,
@@ -508,6 +516,49 @@ class _ShadcnAppState extends State<ShadcnApp> {
     );
   }
 
+  m.ThemeData _createMaterialTheme(ThemeData theme) {
+    final base = m.ThemeData.from(
+      colorScheme: m.ColorScheme.fromSeed(
+        seedColor: theme.colorScheme.primary,
+        brightness: theme.brightness,
+        surface: theme.colorScheme.background,
+        primary: theme.colorScheme.primary,
+        secondary: theme.colorScheme.secondary,
+        error: theme.colorScheme.destructive,
+      ),
+    );
+    // Material controls supply their own TextStyle, overriding DefaultTextStyle.
+    // Carry the app's font selection and locale into every Material text role;
+    // otherwise Windows falls back per glyph from Segoe UI and can mix CJK fonts.
+    final sans = theme.typography.sans;
+    TextStyle? withAppFont(TextStyle? style) => style?.copyWith(
+          fontFamily: sans.fontFamily,
+          fontFamilyFallback: sans.fontFamilyFallback,
+          locale: sans.locale,
+        );
+    m.TextTheme withAppFonts(m.TextTheme text) => m.TextTheme(
+          displayLarge: withAppFont(text.displayLarge),
+          displayMedium: withAppFont(text.displayMedium),
+          displaySmall: withAppFont(text.displaySmall),
+          headlineLarge: withAppFont(text.headlineLarge),
+          headlineMedium: withAppFont(text.headlineMedium),
+          headlineSmall: withAppFont(text.headlineSmall),
+          titleLarge: withAppFont(text.titleLarge),
+          titleMedium: withAppFont(text.titleMedium),
+          titleSmall: withAppFont(text.titleSmall),
+          bodyLarge: withAppFont(text.bodyLarge),
+          bodyMedium: withAppFont(text.bodyMedium),
+          bodySmall: withAppFont(text.bodySmall),
+          labelLarge: withAppFont(text.labelLarge),
+          labelMedium: withAppFont(text.labelMedium),
+          labelSmall: withAppFont(text.labelSmall),
+        );
+    return base.copyWith(
+      textTheme: withAppFonts(base.textTheme),
+      primaryTextTheme: withAppFonts(base.primaryTextTheme),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget result = _buildWidgetApp(context);
@@ -525,17 +576,7 @@ class _ShadcnAppState extends State<ShadcnApp> {
     return Data<_ShadcnAppState>.inherit(
       data: this,
       child: m.Theme(
-        data: widget.materialTheme ??
-            m.ThemeData.from(
-              colorScheme: m.ColorScheme.fromSeed(
-                seedColor: widget.theme.colorScheme.primary,
-                brightness: widget.theme.brightness,
-                surface: widget.theme.colorScheme.background,
-                primary: widget.theme.colorScheme.primary,
-                secondary: widget.theme.colorScheme.secondary,
-                error: widget.theme.colorScheme.destructive,
-              ),
-            ),
+        data: widget.materialTheme ?? _createMaterialTheme(widget.theme),
         child: c.CupertinoTheme(
           data: widget.cupertinoTheme ??
               c.CupertinoThemeData(
