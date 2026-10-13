@@ -707,7 +707,7 @@ class ShadcnLayer extends StatelessWidget {
             child: ShadcnSkeletonizerConfigLayer(
               theme: theme,
               child: DefaultTextStyle.merge(
-                style: theme.typography.base.copyWith(
+                style: theme.typography.sans.merge(theme.typography.base).copyWith(
                   color: theme.colorScheme.foreground,
                 ),
                 child: IconTheme.merge(
@@ -1121,10 +1121,9 @@ class ShadcnUI extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AnimatedDefaultTextStyle(
-      style: textStyle ??
-          theme.typography.sans.copyWith(
+      style: theme.typography.sans.merge(theme.typography.base).copyWith(
             color: theme.colorScheme.foreground,
-          ),
+          ).merge(textStyle),
       duration: kDefaultDuration,
       child: IconTheme(
         data: IconThemeData(
