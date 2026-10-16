@@ -178,6 +178,12 @@ class Command extends StatefulWidget {
   /// Defaults to `true` for convenient keyboard-driven interaction.
   final bool autofocus;
 
+  /// Optional caller-owned controller, useful when changing result scopes.
+  final TextEditingController? controller;
+
+  /// Hide keyboard hints on compact touch layouts.
+  final bool showKeyboardHints;
+
   /// Async builder function that provides search results based on the query.
   ///
   /// Receives the current search query string and should return a stream of
@@ -258,6 +264,8 @@ class Command extends StatefulWidget {
     super.key,
     required this.builder,
     this.autofocus = true,
+    this.controller,
+    this.showKeyboardHints = true,
     this.debounceDuration = const Duration(milliseconds: 500),
     this.emptyBuilder,
     this.errorBuilder,
@@ -279,7 +287,8 @@ class _Query {
 }
 
 class _CommandState extends State<Command> {
-  final TextEditingController _controller = TextEditingController();
+  late final TextEditingController _controller =
+      widget.controller ?? TextEditingController();
   late _Query _currentRequest;
 
   int requestCount = 0;
@@ -301,17 +310,27 @@ class _CommandState extends State<Command> {
   @override
   void initState() {
     super.initState();
-    _currentRequest = _Query(stream: _request(context, null));
-    _controller.addListener(() {
-      String? newQuery = _controller.text;
-      if (newQuery.isEmpty) newQuery = null;
-      if (newQuery != _currentRequest.query) {
-        setState(() {
-          _currentRequest =
-              _Query(stream: _request(context, newQuery), query: newQuery);
-        });
-      }
-    });
+    final query = _controller.text.isEmpty ? null : _controller.text;
+    _currentRequest = _Query(stream: _request(context, query), query: query);
+    _controller.addListener(_onQueryChanged);
+  }
+
+  void _onQueryChanged() {
+    String? newQuery = _controller.text;
+    if (newQuery.isEmpty) newQuery = null;
+    if (newQuery != _currentRequest.query) {
+      setState(() {
+        _currentRequest =
+            _Query(stream: _request(context, newQuery), query: newQuery);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onQueryChanged);
+    if (widget.controller == null) _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -338,6 +357,7 @@ class _CommandState extends State<Command> {
               ),
               ActivateIntent: CallbackAction<ActivateIntent>(
                 onInvoke: (intent) {
+                  if (!_controller.value.composing.isCollapsed) return null;
                   state.invokeActionOnFocused(intent);
                   return null;
                 },
@@ -440,8 +460,8 @@ class _CommandState extends State<Command> {
                           },
                         ),
                       ),
-                      const Divider(),
-                      Container(
+                      if (widget.showKeyboardHints) const Divider(),
+                      if (widget.showKeyboardHints) Container(
                         color: theme.colorScheme.card,
                         padding: EdgeInsets.symmetric(
                           horizontal: theme.density.baseContentPadding *
