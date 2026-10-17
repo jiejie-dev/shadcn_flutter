@@ -205,7 +205,7 @@ class _DatePickerDialogState extends State<DatePickerDialog> {
   String getHeaderText(ShadcnLocalizations localizations, CalendarView view,
       CalendarViewType viewType) {
     if (viewType == CalendarViewType.date) {
-      return '${localizations.getMonth(view.month)} ${view.year}';
+      return localizations.formatMonthYear(view.year, view.month);
     }
     if (viewType == CalendarViewType.month) {
       return '${view.year}';

@@ -2,23 +2,21 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Extension methods for [ShadcnLocalizations] to provide additional formatting and utility functions.
 extension ShadcnLocalizationsExtensions on ShadcnLocalizations {
-  /// The order of date parts for the current locale.
-  ///
-  /// Default is [DatePart.month], [DatePart.day], [DatePart.year].
-  List<DatePart> get datePartsOrder => const [
-        DatePart.month,
-        DatePart.day,
-        DatePart.year,
-      ];
+  bool get _isChinese => localeName.startsWith('zh');
+
+  /// Chinese uses year/month/day; English uses month/day/year.
+  List<DatePart> get datePartsOrder => _isChinese
+      ? const [DatePart.year, DatePart.month, DatePart.day]
+      : const [DatePart.month, DatePart.day, DatePart.year];
 
   /// The abbreviation for the year component (e.g., 'YYYY').
-  String get dateYearAbbreviation => 'YYYY';
+  String get dateYearAbbreviation => _isChinese ? '年' : 'YYYY';
 
   /// The abbreviation for the month component (e.g., 'MM').
-  String get dateMonthAbbreviation => 'MM';
+  String get dateMonthAbbreviation => _isChinese ? '月' : 'MM';
 
   /// The abbreviation for the day component (e.g., 'DD').
-  String get dateDayAbbreviation => 'DD';
+  String get dateDayAbbreviation => _isChinese ? '日' : 'DD';
 
   /// Gets the abbreviation for a specific [DatePart].
   String getDatePartAbbreviation(DatePart part) {
@@ -38,73 +36,56 @@ extension ShadcnLocalizationsExtensions on ShadcnLocalizations {
   /// [showTime] - Whether to include the time part.
   /// [showSeconds] - Whether to include seconds in the time part.
   /// [use24HourFormat] - Whether to use 24-hour format for time.
-  String formatDateTime(DateTime dateTime,
-      {bool showDate = true,
-      bool showTime = true,
-      bool showSeconds = false,
-      bool use24HourFormat = true}) {
-    String result = '';
+  String formatDateTime(
+    DateTime dateTime, {
+    bool showDate = true,
+    bool showTime = true,
+    bool showSeconds = false,
+    bool use24HourFormat = true,
+  }) {
+    final parts = <String>[];
     if (showDate) {
-      result += '${getMonth(dateTime.month)} ${dateTime.day}, ${dateTime.year}';
+      parts.add(
+        _isChinese
+            ? '${dateTime.year}年${dateTime.month}月${dateTime.day}日'
+            : '${getMonth(dateTime.month)} ${dateTime.day}, ${dateTime.year}',
+      );
     }
     if (showTime) {
-      if (use24HourFormat) {
-        if (result.isNotEmpty) {
-          result += ' ';
-        }
-        result += '${dateTime.hour}:${dateTime.minute}';
-        if (showSeconds) {
-          result += ':${dateTime.second}';
-        }
-      } else {
-        if (result.isNotEmpty) {
-          result += ' ';
-        }
-        int hour = dateTime.hour;
-        if (hour > 12) {
-          hour -= 12;
-          result += '$hour:${dateTime.minute} $timePM';
-        } else {
-          result += '$hour:${dateTime.minute} $timeAM';
-        }
-      }
+      parts.add(
+        formatTimeOfDay(
+          TimeOfDay(
+            hour: dateTime.hour,
+            minute: dateTime.minute,
+            second: dateTime.second,
+          ),
+          use24HourFormat: use24HourFormat,
+          showSeconds: showSeconds,
+        ),
+      );
     }
-    return result;
+    return parts.join(' ');
   }
 
-  /// Formats a [TimeOfDay] object into a string.
-  ///
-  /// [use24HourFormat] - Whether to use 24-hour format.
-  /// [showSeconds] - Whether to include seconds.
-  String formatTimeOfDay(TimeOfDay time,
-      {bool use24HourFormat = true, bool showSeconds = false}) {
-    String result = '';
-    if (use24HourFormat) {
-      result +=
-          '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-      if (showSeconds) {
-        result += ':${time.second.toString().padLeft(2, '0')}';
-      }
-    } else {
-      int hour = time.hour;
-      if (hour > 12) {
-        hour -= 12;
-        if (showSeconds) {
-          result +=
-              '${hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')} $timePM';
-        } else {
-          result +=
-              '${hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')} $timePM';
-        }
-      } else {
-        if (showSeconds) {
-          result +=
-              '${hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')} $timeAM';
-        } else {
-          result +=
-              '${hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')} $timeAM';
-        }
-      }
+  /// Formats calendar headings in the locale's year/month order.
+  String formatMonthYear(int year, int month) =>
+      _isChinese ? '$year年$month月' : '${getMonth(month)} $year';
+
+  /// Formats time, including midnight/noon and localized day periods.
+  String formatTimeOfDay(
+    TimeOfDay time, {
+    bool use24HourFormat = true,
+    bool showSeconds = false,
+  }) {
+    final hour = use24HourFormat
+        ? time.hour
+        : (time.hour % 12 == 0 ? 12 : time.hour % 12);
+    var result =
+        '${hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    if (showSeconds) result += ':${time.second.toString().padLeft(2, '0')}';
+    if (!use24HourFormat) {
+      final period = time.hour >= 12 ? timePM : timeAM;
+      result = _isChinese ? '$period $result' : '$result $period';
     }
     return result;
   }
@@ -224,27 +205,29 @@ extension ShadcnLocalizationsExtensions on ShadcnLocalizations {
   /// [showHours] - Whether to show hours.
   /// [showMinutes] - Whether to show minutes.
   /// [showSeconds] - Whether to show seconds.
-  String formatDuration(Duration duration,
-      {bool showDays = true,
-      bool showHours = true,
-      bool showMinutes = true,
-      bool showSeconds = true}) {
+  String formatDuration(
+    Duration duration, {
+    bool showDays = true,
+    bool showHours = true,
+    bool showMinutes = true,
+    bool showSeconds = true,
+  }) {
     final days = duration.inDays;
     final hours = duration.inHours % Duration.hoursPerDay;
     final minutes = duration.inMinutes % Duration.minutesPerHour;
     final seconds = duration.inSeconds % Duration.secondsPerMinute;
     final parts = <String>[];
     if (showDays && days > 0) {
-      parts.add('${days}d');
+      parts.add(_isChinese ? '$days$durationDay' : '${days}d');
     }
     if (showHours && hours > 0) {
-      parts.add('${hours}h');
+      parts.add(_isChinese ? '$hours$durationHour' : '${hours}h');
     }
     if (showMinutes && minutes > 0) {
-      parts.add('${minutes}m');
+      parts.add(_isChinese ? '$minutes$durationMinute' : '${minutes}m');
     }
     if (showSeconds && seconds > 0) {
-      parts.add('${seconds}s');
+      parts.add(_isChinese ? '$seconds$durationSecond' : '${seconds}s');
     }
     return parts.join(' ');
   }
