@@ -83,12 +83,15 @@ OverlayCompleter<T?> showDropdown<T>({
   Duration? dismissDuration,
 }) {
   final theme = Theme.of(context);
+  final menuTheme = ComponentTheme.maybeOf<DropdownMenuTheme>(context);
   final scaling = theme.scaling;
   final GlobalKey key = GlobalKey();
   final overlayManager = OverlayManager.of(context);
   return overlayManager.showMenu<T>(
     context: context,
-    alignment: alignment ?? Alignment.topCenter,
+    alignment: alignment ??
+        (position == null ? menuTheme?.alignment : null) ??
+        Alignment.topCenter,
     offset: offset ?? (const Offset(0, 4) * scaling),
     follow: follow,
     clipBehavior: clipBehavior,
@@ -102,7 +105,8 @@ OverlayCompleter<T?> showDropdown<T>({
     widthConstraint: widthConstraint,
     heightConstraint: heightConstraint,
     position: position,
-    anchorAlignment: anchorAlignment,
+    anchorAlignment: anchorAlignment ??
+        (position == null ? menuTheme?.anchorAlignment : null),
     consumeOutsideTaps: consumeOutsideTaps,
     regionGroupId: key,
     modal: modal,
@@ -138,6 +142,12 @@ class DropdownMenuData {
 
 /// Theme for [DropdownMenu].
 class DropdownMenuTheme extends ComponentThemeData {
+  /// Default menu alignment for widget-anchored dropdowns.
+  final AlignmentGeometry? alignment;
+
+  /// Default anchor point for widget-anchored dropdowns.
+  final AlignmentGeometry? anchorAlignment;
+
   /// Surface opacity for the popup container.
   final double? surfaceOpacity;
 
@@ -145,17 +155,27 @@ class DropdownMenuTheme extends ComponentThemeData {
   final double? surfaceBlur;
 
   /// Creates a [DropdownMenuTheme].
-  const DropdownMenuTheme({this.surfaceOpacity, this.surfaceBlur});
+  const DropdownMenuTheme({
+    this.surfaceOpacity,
+    this.surfaceBlur,
+    this.alignment,
+    this.anchorAlignment,
+  });
 
   /// Returns a copy of this theme with the given fields replaced.
   DropdownMenuTheme copyWith({
     ValueGetter<double?>? surfaceOpacity,
     ValueGetter<double?>? surfaceBlur,
+    ValueGetter<AlignmentGeometry?>? alignment,
+    ValueGetter<AlignmentGeometry?>? anchorAlignment,
   }) {
     return DropdownMenuTheme(
       surfaceOpacity:
           surfaceOpacity == null ? this.surfaceOpacity : surfaceOpacity(),
       surfaceBlur: surfaceBlur == null ? this.surfaceBlur : surfaceBlur(),
+      alignment: alignment == null ? this.alignment : alignment(),
+      anchorAlignment: anchorAlignment == null
+          ? this.anchorAlignment : anchorAlignment(),
     );
   }
 
@@ -164,11 +184,14 @@ class DropdownMenuTheme extends ComponentThemeData {
     if (identical(this, other)) return true;
     return other is DropdownMenuTheme &&
         other.surfaceOpacity == surfaceOpacity &&
-        other.surfaceBlur == surfaceBlur;
+        other.surfaceBlur == surfaceBlur &&
+        other.alignment == alignment &&
+        other.anchorAlignment == anchorAlignment;
   }
 
   @override
-  int get hashCode => Object.hash(surfaceOpacity, surfaceBlur);
+  int get hashCode =>
+      Object.hash(surfaceOpacity, surfaceBlur, alignment, anchorAlignment);
 }
 
 /// A dropdown menu widget that displays a list of menu items in a popup.

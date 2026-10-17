@@ -5445,6 +5445,18 @@ class CardButton extends StatelessWidget {
   }
 }
 
+/// App-wide spacing override for icon buttons. Explicit compact densities keep
+/// their own spacing; ordinary text buttons are unaffected.
+class IconButtonTheme extends ComponentThemeData {
+  final double paddingScale;
+  const IconButtonTheme({this.paddingScale = 1});
+  @override
+  bool operator ==(Object other) =>
+      other is IconButtonTheme && other.paddingScale == paddingScale;
+  @override
+  int get hashCode => paddingScale.hashCode;
+}
+
 /// Icon-only button widget with support for multiple visual styles.
 ///
 /// [IconButton] is optimized for displaying buttons with icon content,
@@ -5834,6 +5846,11 @@ class IconButton extends StatelessWidget {
         size: size,
         density: density,
         shape: shape,
+      ).copyWith(
+        padding: (context, states, padding) => padding *
+            (density == ButtonDensity.icon
+                ? (ComponentTheme.maybeOf<IconButtonTheme>(context)?.paddingScale ?? 1)
+                : 1),
       ),
       focusNode: focusNode,
       disableTransition: disableTransition,
