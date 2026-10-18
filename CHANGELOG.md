@@ -1,3 +1,13 @@
+## 0.2.1
+
+ - **FIX**(shadcn_flutter): 在命令搜索流更新时使用自定义加载组件.
+ - **FIX**(shadcn_flutter): 适配中文日期时间格式.
+ - **FIX**(shadcn_flutter): 修复按钮样式嵌套继承导致的递归溢出.
+ - **FIX**(shadcn_flutter): 修复明暗主题和局部样式的字体继承.
+ - **FIX**(shadcn_flutter): 修复中文控件字体回退与字重不一致.
+ - **FEAT**(shadcn_flutter): 支持图标按钮间距与菜单定位主题.
+ - **FEAT**(shadcn_flutter): 增强 Command 搜索控制与移动端适配.
+
 ## 0.2.0+1
 
  - **FIX**(shadcn_flutter): 修复窗口最小化后未隐藏的问题.
