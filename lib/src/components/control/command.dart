@@ -422,7 +422,8 @@ class _CommandState extends State<Command> {
                                   data: IconThemeData(
                                     color: theme.colorScheme.mutedForeground,
                                   ),
-                                  child: const Center(
+                                  child: widget.loadingBuilder?.call(context) ??
+                                      const Center(
                                           child: CircularProgressIndicator())
                                       .withPadding(
                                     vertical:
