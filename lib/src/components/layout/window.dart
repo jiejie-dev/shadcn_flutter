@@ -2806,7 +2806,8 @@ class WindowActions extends StatelessWidget {
   ///
   /// This widget automatically displays appropriate control buttons based on
   /// the window's configuration and capabilities.
-  const WindowActions({super.key});
+  const WindowActions({super.key, this.onClose});
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -2850,7 +2851,11 @@ class WindowActions extends StatelessWidget {
             icon: const Icon(Icons.close),
             size: ButtonSize.small,
             onPressed: () {
-              handle?.close();
+              if (onClose != null) {
+                onClose!();
+              } else {
+                handle?.close();
+              }
             },
           )
       ],

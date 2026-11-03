@@ -1,5 +1,16 @@
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+/// Defines the root dialog navigator for an application embedded in another app.
+class DialogNavigatorScope extends InheritedWidget {
+  const DialogNavigatorScope({super.key, required this.navigatorKey, required super.child});
+  final GlobalKey<NavigatorState> navigatorKey;
+  static NavigatorState? maybeOf(BuildContext context) => context
+      .dependOnInheritedWidgetOfExactType<DialogNavigatorScope>()?.navigatorKey.currentState;
+  @override
+  bool updateShouldNotify(DialogNavigatorScope oldWidget) => navigatorKey != oldWidget.navigatorKey;
+}
+
+
 /// Theme configuration for modal backdrop appearance and behavior.
 ///
 /// Defines the visual and behavioral properties of the backdrop that appears
@@ -716,7 +727,7 @@ Future<T?> showDialog<T>({
   AlignmentGeometry? alignment,
   bool fullScreen = false,
 }) {
-  var navigatorState = Navigator.of(
+  var navigatorState = (useRootNavigator ? DialogNavigatorScope.maybeOf(context) : null) ?? Navigator.of(
     context,
     rootNavigator: useRootNavigator,
   );
