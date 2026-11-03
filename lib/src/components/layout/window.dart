@@ -41,7 +41,14 @@ class WindowTheme extends ComponentThemeData {
   ///
   /// Both parameters are optional. When `null`, the corresponding values
   /// will fall back to theme defaults.
-  const WindowTheme({this.titleBarHeight, this.resizeThickness});
+  const WindowTheme({
+    this.titleBarHeight,
+    this.resizeThickness,
+    this.overlayTitleBar = false,
+  });
+
+  /// Paint content behind the transparent title bar; consumers must reserve its inset.
+  final bool overlayTitleBar;
 
   /// Creates a copy of this theme with optionally replaced values.
   ///
@@ -57,12 +64,16 @@ class WindowTheme extends ComponentThemeData {
   WindowTheme copyWith({
     ValueGetter<double?>? titleBarHeight,
     ValueGetter<double?>? resizeThickness,
+    bool? overlayTitleBar,
   }) {
     return WindowTheme(
-      titleBarHeight:
-          titleBarHeight == null ? this.titleBarHeight : titleBarHeight(),
-      resizeThickness:
-          resizeThickness == null ? this.resizeThickness : resizeThickness(),
+      overlayTitleBar: overlayTitleBar ?? this.overlayTitleBar,
+      titleBarHeight: titleBarHeight == null
+          ? this.titleBarHeight
+          : titleBarHeight(),
+      resizeThickness: resizeThickness == null
+          ? this.resizeThickness
+          : resizeThickness(),
     );
   }
 
@@ -70,10 +81,12 @@ class WindowTheme extends ComponentThemeData {
   bool operator ==(Object other) =>
       other is WindowTheme &&
       other.titleBarHeight == titleBarHeight &&
-      other.resizeThickness == resizeThickness;
+      other.resizeThickness == resizeThickness &&
+      other.overlayTitleBar == overlayTitleBar;
 
   @override
-  int get hashCode => Object.hash(titleBarHeight, resizeThickness);
+  int get hashCode =>
+      Object.hash(titleBarHeight, resizeThickness, overlayTitleBar);
 
   @override
   String toString() =>
@@ -1016,133 +1029,136 @@ class _WindowWidgetState extends State<WindowWidget> with WindowHandle {
               (widget.titleBarHeight ?? compTheme?.titleBarHeight ?? 32) *
                   theme.scaling;
 
+          final hasTitleBar = widget.title != null || widget.actions != null;
+          final titleBar = ClickDetector(
+            onClick: maximizable
+                ? (details) {
+                    if (details.clickCount >= 2) {
+                      if (maximized == null) {
+                        maximized = const Rect.fromLTWH(0, 0, 1, 1);
+                      } else {
+                        maximized = null;
+                      }
+                    }
+                  }
+                : null,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onPanStart: (details) {
+                var localPosition = details.localPosition;
+                var bounds = this.bounds;
+                var max = maximized;
+                var size = _viewport?.size;
+                if (max != null && size != null) {
+                  bounds = Rect.fromLTWH(
+                    max.left * size.width,
+                    max.top * size.height,
+                    max.width * size.width,
+                    max.height * size.height,
+                  );
+                }
+                var alignX = lerpDouble(
+                  -1,
+                  1,
+                  (localPosition.dx / bounds.width),
+                )!;
+                var alignY = lerpDouble(
+                  -1,
+                  1,
+                  (localPosition.dy / bounds.height),
+                )!;
+                _dragAlignment = Alignment(alignX, alignY);
+                if (_entry != null) {
+                  _viewport?.navigator._state._startDraggingWindow(
+                    _entry!,
+                    details.globalPosition,
+                  );
+                }
+                if (state.maximized != null) {
+                  maximized = null;
+                  RenderBox? layerRenderBox =
+                      _viewport?.navigator._state.context.findRenderObject()
+                          as RenderBox?;
+                  if (layerRenderBox != null) {
+                    Offset layerLocal = layerRenderBox.globalToLocal(
+                      details.globalPosition,
+                    );
+                    Size titleSize = Size(this.bounds.width, titleBarHeight);
+                    this.bounds = Rect.fromLTWH(
+                      layerLocal.dx - titleSize.width / 2,
+                      layerLocal.dy - titleSize.height / 2,
+                      this.bounds.width,
+                      this.bounds.height,
+                    );
+                  }
+                }
+              },
+              onPanUpdate: (details) {
+                bounds = bounds.translate(details.delta.dx, details.delta.dy);
+                if (_entry != null) {
+                  _viewport?.navigator._state._updateDraggingWindow(
+                    _entry!,
+                    details.globalPosition,
+                  );
+                }
+              },
+              onPanEnd: (details) {
+                if (_entry != null) {
+                  _viewport?.navigator._state._stopDraggingWindow(_entry!);
+                }
+                _dragAlignment = null;
+              },
+              onPanCancel: () {
+                if (_entry != null) {
+                  _viewport?.navigator._state._stopDraggingWindow(_entry!);
+                }
+                _dragAlignment = null;
+              },
+              child: Container(
+                height: titleBarHeight,
+                padding: EdgeInsets.all(2 * theme.scaling),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8 * theme.scaling,
+                        ),
+                        child: (_viewport?.focused ?? true)
+                            ? (widget.title ?? const SizedBox())
+                            : (widget.title ?? const SizedBox()).muted(),
+                      ),
+                    ),
+                    if (widget.actions != null) widget.actions!,
+                  ],
+                ),
+              ),
+            ),
+          );
+          final overlay = compTheme?.overlayTitleBar ?? false;
           Widget windowClient = Card(
             clipBehavior: Clip.antiAlias,
             padding: EdgeInsets.zero,
             borderRadius: state.maximized != null
                 ? BorderRadius.zero
                 : theme.borderRadiusMd,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (widget.title != null || widget.actions != null)
-                  ClickDetector(
-                    onClick: maximizable
-                        ? (details) {
-                            if (details.clickCount >= 2) {
-                              if (maximized == null) {
-                                maximized = const Rect.fromLTWH(0, 0, 1, 1);
-                              } else {
-                                maximized = null;
-                              }
-                            }
-                          }
-                        : null,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onPanStart: (details) {
-                        var localPosition = details.localPosition;
-                        var bounds = this.bounds;
-                        var max = maximized;
-                        var size = _viewport?.size;
-                        if (max != null && size != null) {
-                          bounds = Rect.fromLTWH(
-                              max.left * size.width,
-                              max.top * size.height,
-                              max.width * size.width,
-                              max.height * size.height);
-                        }
-                        var alignX = lerpDouble(
-                            -1, 1, (localPosition.dx / bounds.width))!;
-                        var alignY = lerpDouble(
-                            -1, 1, (localPosition.dy / bounds.height))!;
-                        _dragAlignment = Alignment(
-                          alignX,
-                          alignY,
-                        );
-                        if (_entry != null) {
-                          _viewport?.navigator._state._startDraggingWindow(
-                            _entry!,
-                            details.globalPosition,
-                          );
-                        }
-                        if (state.maximized != null) {
-                          maximized = null;
-                          RenderBox? layerRenderBox = _viewport
-                              ?.navigator._state.context
-                              .findRenderObject() as RenderBox?;
-                          if (layerRenderBox != null) {
-                            Offset layerLocal = layerRenderBox
-                                .globalToLocal(details.globalPosition);
-                            Size titleSize =
-                                Size(this.bounds.width, titleBarHeight);
-                            this.bounds = Rect.fromLTWH(
-                              layerLocal.dx - titleSize.width / 2,
-                              layerLocal.dy - titleSize.height / 2,
-                              this.bounds.width,
-                              this.bounds.height,
-                            );
-                          }
-                        }
-                      },
-                      onPanUpdate: (details) {
-                        bounds = bounds.translate(
-                          details.delta.dx,
-                          details.delta.dy,
-                        );
-                        if (_entry != null) {
-                          _viewport?.navigator._state._updateDraggingWindow(
-                            _entry!,
-                            details.globalPosition,
-                          );
-                        }
-                      },
-                      onPanEnd: (details) {
-                        if (_entry != null) {
-                          _viewport?.navigator._state._stopDraggingWindow(
-                            _entry!,
-                          );
-                        }
-                        _dragAlignment = null;
-                      },
-                      onPanCancel: () {
-                        if (_entry != null) {
-                          _viewport?.navigator._state._stopDraggingWindow(
-                            _entry!,
-                          );
-                        }
-                        _dragAlignment = null;
-                      },
-                      child: Container(
-                        height: titleBarHeight,
-                        padding: EdgeInsets.all(
-                          2 * theme.scaling,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8 * theme.scaling,
-                                ),
-                                child: (_viewport?.focused ?? true)
-                                    ? (widget.title ?? const SizedBox())
-                                    : (widget.title ?? const SizedBox())
-                                        .muted(),
-                              ),
-                            ),
-                            if (widget.actions != null) widget.actions!,
-                          ],
-                        ),
-                      ),
-                    ),
+            child: overlay
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (widget.content != null) widget.content!,
+                      if (hasTitleBar)
+                        Positioned(top: 0, left: 0, right: 0, child: titleBar),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (hasTitleBar) titleBar,
+                      if (widget.content != null)
+                        Expanded(child: widget.content!),
+                    ],
                   ),
-                if (widget.content != null)
-                  Expanded(
-                    child: widget.content!,
-                  ),
-              ],
-            ),
           );
           windowClient = MouseRegion(
             cursor: SystemMouseCursors.basic,
