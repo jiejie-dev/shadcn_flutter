@@ -1,3 +1,8 @@
+## 0.2.2
+
+ - **FIX**(shadcn_flutter): 支持内置窗口关闭回调与弹窗导航作用域.
+ - **FEAT**(shadcn_flutter): 支持透明悬浮窗口标题栏.
+
 ## 0.2.1
 
  - **FIX**(shadcn_flutter): 在命令搜索流更新时使用自定义加载组件.
